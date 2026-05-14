@@ -6,8 +6,19 @@ on:
       - 'v*.*.*'
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  build-installers:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: windows
+          - os: macos-latest
+            label: macos
+          - os: ubuntu-latest
+            label: linux
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout repository
@@ -20,9 +31,16 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Install WiX Toolset v3
+      - name: Install WiX Toolset v3 (Windows only)
+        if: matrix.os == 'windows-latest'
         run: choco install wixtoolset --yes
         shell: cmd
+
+      - name: Install RPM tools (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y rpm fakeroot
 
       - name: Create application.properties from secrets
         shell: bash
@@ -53,7 +71,9 @@ jobs:
         shell: bash
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
-      - name: Package .msi installer
+      # ── WINDOWS ──────────────────────────────────────────────────
+      - name: Package .msi installer (Windows)
+        if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
           jpackage `
@@ -73,21 +93,78 @@ jobs:
             --win-menu-group "AYVO" `
             --java-options "-Dspring.config.location=file:$env:APPDATA/AYVO/application.properties"
 
+      # ── macOS ─────────────────────────────────────────────────────
+      - name: Package .dmg installer (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          jpackage \
+            --type dmg \
+            --name "AYVO" \
+            --app-version "${{ steps.version.outputs.VERSION }}" \
+            --vendor "Betsanych Tetyana" \
+            --description "Tour Operator Management System" \
+            --input target/ \
+            --main-jar tour-operator-system-fat.jar \
+            --main-class com.touroperator.ui.Launcher \
+            --dest dist/ \
+            --mac-package-name "ayvo" \
+            --mac-package-identifier "com.touroperator.ui" \
+            --java-options "-Dspring.config.location=file:\$HOME/Library/Application Support/AYVO/application.properties"
+
+      # ── LINUX ─────────────────────────────────────────────────────
+      - name: Package .deb and .rpm installers (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          # DEB — Ubuntu/Debian
+          jpackage \
+            --type deb \
+            --name "ayvo" \
+            --app-version "${{ steps.version.outputs.VERSION }}" \
+            --vendor "Betsanych Tetyana" \
+            --description "Tour Operator Management System" \
+            --input target/ \
+            --main-jar tour-operator-system-fat.jar \
+            --main-class com.touroperator.ui.Launcher \
+            --dest dist/ \
+            --linux-package-name "ayvo" \
+            --linux-app-category "Office" \
+            --linux-shortcut \
+            --java-options "-Dspring.config.location=file:\$HOME/.config/AYVO/application.properties"
+
+          # RPM — RedHat/Fedora
+          jpackage \
+            --type rpm \
+            --name "ayvo" \
+            --app-version "${{ steps.version.outputs.VERSION }}" \
+            --vendor "Betsanych Tetyana" \
+            --description "Tour Operator Management System" \
+            --input target/ \
+            --main-jar tour-operator-system-fat.jar \
+            --main-class com.touroperator.ui.Launcher \
+            --dest dist/ \
+            --linux-package-name "ayvo" \
+            --linux-app-category "Office" \
+            --linux-shortcut \
+            --java-options "-Dspring.config.location=file:\$HOME/.config/AYVO/application.properties"
+
+          # Fat JAR для будь-якої ОС з Java 21
+          cp target/tour-operator-system-fat.jar dist/
+
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: installer-windows
+          name: installer-${{ matrix.label }}
           path: dist/
           retention-days: 1
 
   publish-release:
-    needs: build-windows
+    needs: build-installers
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Download installer artifact
+      - name: Download all installer artifacts
         uses: actions/download-artifact@v4
         with:
           path: installers/
@@ -100,15 +177,19 @@ jobs:
           body: |
             ## AYVO ${{ github.ref_name }}
 
-            ### Встановлення
-            1. Завантажте `AYVO-*.msi`
-            2. Встановіть
-            3. Скопіюйте `application.properties` у `%APPDATA%\AYVO\`
-            4. Запустіть AYVO
+            ### Завантаження
+
+            | Платформа | Файл | Примітки |
+            |---|---|---|
+            | Windows 10/11 | `AYVO-*.msi` | Скопіюйте `application.properties` у `%APPDATA%\AYVO\` |
+            | macOS 12+ | `AYVO-*.dmg` | Скопіюйте `application.properties` у `~/Library/Application Support/AYVO/` |
+            | Ubuntu/Debian | `ayvo_*.deb` | `sudo dpkg -i *.deb`, конфіг у `~/.config/AYVO/` |
+            | RedHat/Fedora | `ayvo-*.rpm` | `sudo rpm -i *.rpm`, конфіг у `~/.config/AYVO/` |
+            | Будь-яка ОС (Java 21+) | `*.jar` | `java -jar tour-operator-system-fat.jar` |
 
             ### Вимоги
-            - Windows 10/11
-            - PostgreSQL (запущений)
+            - PostgreSQL (запущений і налаштований)
+            - `application.properties` у відповідній папці конфігурації
 
           files: installers/**
           draft: false
