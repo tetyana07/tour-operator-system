@@ -1,29 +1,18 @@
 name: Release — Build Installers
 
-# Запускається при пуші тегу виду v1.0.0, v1.2.3 тощо
 on:
   push:
     tags:
       - 'v*.*.*'
 
 jobs:
-  # ─────────────────────────────────────────────────────────────────
-  # JOB 1: Збірка нативних інсталяторів для трьох платформ паралельно
-  # ─────────────────────────────────────────────────────────────────
-  build-installers:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-
-    runs-on: ${{ matrix.os }}
+  build-windows:
+    runs-on: windows-latest
 
     steps:
-      # 1. Клонування репозиторію
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Встановлення JDK 21 (відповідає версії в pom.xml)
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -31,129 +20,74 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # 3. WiX Toolset v3 — потрібен лише на Windows для генерації .msi
-      #    ВАЖЛИВО: jpackage підтримує тільки WiX 3.x (не 4.x або 5.x)
-      - name: Install WiX Toolset v3 (Windows only)
-        if: matrix.os == 'windows-latest'
+      - name: Install WiX Toolset v3
         run: choco install wixtoolset --yes
         shell: cmd
 
-      # 4. Інструменти RPM — потрібні лише на Linux для генерації .rpm
-      - name: Install RPM tools (Linux only)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Create application.properties from secrets
+        shell: bash
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y rpm
+          mkdir -p src/main/resources
+          cat > src/main/resources/application.properties << EOF
+          db.url=${{ secrets.DB_URL }}
+          db.user=${{ secrets.DB_USER }}
+          db.password=${{ secrets.DB_PASSWORD }}
+          weather.api.key=${{ secrets.WEATHER_API_KEY }}
+          demo.admin.email=admin@ayvo.ua
+          demo.admin.password=admin123
+          mail.smtp.host=smtp.gmail.com
+          mail.smtp.port=587
+          mail.smtp.auth=true
+          mail.smtp.starttls=true
+          mail.from=noreply@ayvo.ua
+          mail.username=${{ secrets.MAIL_USERNAME }}
+          mail.password=${{ secrets.MAIL_PASSWORD }}
+          mail.dry.run=false
+          EOF
 
-      # 5. Збірка Fat JAR (maven-shade-plugin запускається разом з package)
       - name: Build Fat JAR
         run: mvn clean package -DskipTests
 
-      # 6. Підготовка директорії для jpackage
-      - name: Prepare jpackage input directory
-        run: |
-          mkdir -p jpackage-input
-          cp target/tour-operator-system-fat.jar jpackage-input/
-
-      # 7. Витягуємо версію з git-тегу: v1.0.0 → 1.0.0
       - name: Extract version from tag
         id: version
         shell: bash
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
-      # ── WINDOWS: генерація .msi інсталятора ──────────────────────
-      - name: Package .msi installer (Windows)
-        if: matrix.os == 'windows-latest'
+      - name: Package .msi installer
         shell: pwsh
         run: |
           jpackage `
             --type msi `
-            --name "Tour Operator System" `
+            --name "AYVO" `
             --app-version "${{ steps.version.outputs.VERSION }}" `
-            --vendor "TourOperator" `
+            --vendor "Betsanych Tetyana" `
             --description "Tour Operator Management System" `
-            --input jpackage-input/ `
+            --input target/ `
             --main-jar tour-operator-system-fat.jar `
             --main-class com.touroperator.ui.Launcher `
+            --icon packaging/app.ico `
             --dest dist/ `
             --win-dir-chooser `
             --win-menu `
             --win-shortcut `
-            --win-menu-group "TourOperator"
+            --win-menu-group "AYVO" `
+            --java-options "-Dspring.config.location=file:$env:APPDATA/AYVO/application.properties"
 
-      # ── macOS: генерація .dmg образу ─────────────────────────────
-      - name: Package .dmg installer (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          jpackage \
-            --type dmg \
-            --name "Tour Operator System" \
-            --app-version "${{ steps.version.outputs.VERSION }}" \
-            --vendor "TourOperator" \
-            --description "Tour Operator Management System" \
-            --input jpackage-input/ \
-            --main-jar tour-operator-system-fat.jar \
-            --main-class com.touroperator.ui.Launcher \
-            --dest dist/ \
-            --mac-package-name "tour-operator-system" \
-            --mac-package-identifier "com.touroperator.ui"
-
-      # ── LINUX: генерація .deb (Ubuntu/Debian) та .rpm (RedHat/Fedora)
-      - name: Package .deb and .rpm installers (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          # DEB — для Debian/Ubuntu
-          jpackage \
-            --type deb \
-            --name "tour-operator-system" \
-            --app-version "${{ steps.version.outputs.VERSION }}" \
-            --vendor "TourOperator" \
-            --description "Tour Operator Management System" \
-            --input jpackage-input/ \
-            --main-jar tour-operator-system-fat.jar \
-            --main-class com.touroperator.ui.Launcher \
-            --dest dist/ \
-            --linux-package-name "tour-operator-system" \
-            --linux-app-category "Office" \
-            --linux-shortcut
-
-          # RPM — для RedHat/Fedora/CentOS
-          jpackage \
-            --type rpm \
-            --name "tour-operator-system" \
-            --app-version "${{ steps.version.outputs.VERSION }}" \
-            --vendor "TourOperator" \
-            --description "Tour Operator Management System" \
-            --input jpackage-input/ \
-            --main-jar tour-operator-system-fat.jar \
-            --main-class com.touroperator.ui.Launcher \
-            --dest dist/ \
-            --linux-package-name "tour-operator-system" \
-            --linux-app-category "Office" \
-            --linux-shortcut
-
-          # Копіюємо Fat JAR у dist/ — щоб він теж потрапив у реліз
-          cp target/tour-operator-system-fat.jar dist/
-
-      # 8. Завантажуємо артефакти для наступного job-у
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: installer-${{ matrix.os }}
+          name: installer-windows
           path: dist/
           retention-days: 1
 
-  # ─────────────────────────────────────────────────────────────────
-  # JOB 2: Публікація GitHub Release з усіма інсталяторами
-  # ─────────────────────────────────────────────────────────────────
   publish-release:
-    needs: build-installers
+    needs: build-windows
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Download all installer artifacts
+      - name: Download installer artifact
         uses: actions/download-artifact@v4
         with:
           path: installers/
@@ -162,19 +96,19 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "Tour Operator System ${{ github.ref_name }}"
+          name: "AYVO ${{ github.ref_name }}"
           body: |
-            ## Tour Operator System ${{ github.ref_name }}
+            ## AYVO ${{ github.ref_name }}
 
-            ### Завантаження
+            ### Встановлення
+            1. Завантажте `AYVO-*.msi`
+            2. Встановіть
+            3. Скопіюйте `application.properties` у `%APPDATA%\AYVO\`
+            4. Запустіть AYVO
 
-            | Платформа | Файл | Примітки |
-            |---|---|---|
-            | Windows 10/11 | `*.msi` | Стандартний інсталятор із майстром встановлення |
-            | macOS 12+ | `*.dmg` | Образ диска, перетягніть у Applications |
-            | Ubuntu/Debian | `*.deb` | `sudo dpkg -i *.deb` |
-            | RedHat/Fedora | `*.rpm` | `sudo rpm -i *.rpm` |
-            | Будь-яка ОС (потрібна JRE 21+) | `*.jar` | `java -jar tour-operator-system-fat.jar` |
+            ### Вимоги
+            - Windows 10/11
+            - PostgreSQL (запущений)
 
           files: installers/**
           draft: false
