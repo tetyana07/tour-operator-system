@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<HBox styleClass="topbar" xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.TopBarController"
+  alignment="CENTER" spacing="10">
+
+  <!-- Logo icon -->
+  <Pane styleClass="logo-box"
+    prefWidth="36" minWidth="36" maxWidth="36"
+    prefHeight="36" minHeight="36" maxHeight="36">
+    <HBox.margin><Insets right="0"/></HBox.margin>
+    <Pane styleClass="auth-logo-leaf" prefWidth="16" prefHeight="20"
+      layoutX="10" layoutY="8"/>
+  </Pane>
+  <Label text="AYVO" styleClass="logo-text"/>
+
+  <Region HBox.hgrow="ALWAYS"/>
+
+  <!-- Повноекранний режим -->
+  <Button fx:id="btnFullscreen" styleClass="notif-btn" text="&#x26F6;"
+    onAction="#onFullscreenToggle" focusTraversable="false"
+    prefWidth="36" prefHeight="36"
+    minWidth="36" minHeight="36" maxWidth="36" maxHeight="36"
+    style="-fx-cursor:hand;">
+    <tooltip><Tooltip text="Повноекранний режим"/></tooltip>
+  </Button>
+
+  <!-- Дзвоник — StackPane щоб badge накладався зверху -->
+  <StackPane fx:id="notifWrapper"
+    prefWidth="36" minWidth="36" maxWidth="36"
+    prefHeight="36" minHeight="36" maxHeight="36"
+    style="-fx-cursor:hand;" onMouseClicked="#onNotifClick">
+
+    <Button fx:id="notifBtn" styleClass="notif-btn" text="&#x1F514;"
+      onAction="#onNotifClick" focusTraversable="false"
+      prefWidth="36" prefHeight="36"
+      minWidth="36" minHeight="36" maxWidth="36" maxHeight="36"
+      StackPane.alignment="CENTER"/>
+
+    <!-- Зелена крапка — абсолютно у правому верхньому куті -->
+    <Pane fx:id="notifBadge" styleClass="notif-badge"
+      prefWidth="10" prefHeight="10"
+      minWidth="10" minHeight="10" maxWidth="10" maxHeight="10"
+      visible="false"
+      StackPane.alignment="TOP_RIGHT">
+      <StackPane.margin><Insets top="-1" right="-1"/></StackPane.margin>
+    </Pane>
+
+  </StackPane>
+
+  <!-- User avatar — той самий розмір 36×36 -->
+  <Label fx:id="lblUserName" text="??" styleClass="user-avatar"
+    prefWidth="36" prefHeight="36"
+    minWidth="36" minHeight="36" maxWidth="36" maxHeight="36"
+    onMouseClicked="#onUserChipClick" style="-fx-cursor:hand;"/>
+
+</HBox>

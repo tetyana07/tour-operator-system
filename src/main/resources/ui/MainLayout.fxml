@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.MainController"
+  stylesheets="/css/style.css"
+  styleClass="app-root"
+  prefWidth="1400" prefHeight="900">
+
+  <top><fx:include fx:id="topBar" source="TopBar.fxml"/></top>
+
+  <left><fx:include fx:id="iconSidebar" source="IconSidebar.fxml"/></left>
+
+  <center>
+    <BorderPane styleClass="app-root">
+      <center>
+        <StackPane fx:id="pageContainer"/>
+      </center>
+      <bottom><fx:include source="BottomStrip.fxml"/></bottom>
+    </BorderPane>
+  </center>
+
+</BorderPane>

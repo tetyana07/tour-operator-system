@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<ScrollPane styleClass="content-scroll" fitToWidth="true" xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.ReportsController">
+  <VBox styleClass="content-area" spacing="24">
+
+    <!-- Page header -->
+    <HBox alignment="CENTER_LEFT">
+      <VBox HBox.hgrow="ALWAYS" spacing="4">
+        <Label text="Аналітика" styleClass="page-title"/>
+        <Label text="Звіти та статистика" styleClass="page-sub"/>
+      </VBox>
+      <HBox spacing="10" alignment="CENTER_RIGHT">
+        <DatePicker fx:id="dateFrom" prefWidth="148"/>
+        <DatePicker fx:id="dateTo"   prefWidth="148"/>
+        <Button text="Застосувати" styleClass="filter-apply-btn" onAction="#onApplyFilter"/>
+      </HBox>
+    </HBox>
+
+    <!-- STAT CARDS -->
+    <HBox spacing="16">
+      <!-- Revenue -->
+      <VBox styleClass="stat-card-v2" HBox.hgrow="ALWAYS" spacing="0">
+        <HBox alignment="CENTER_LEFT" spacing="0">
+          <Region styleClass="stat-accent-bar-green"/>
+          <VBox HBox.hgrow="ALWAYS" spacing="6" style="-fx-padding:0 16 0 14;">
+            <Label text="ВИРУЧКА (ЗАГАЛОМ)" styleClass="stat-label-v2"/>
+            <Label fx:id="statRevenue" text="..." styleClass="stat-value-v2"/>
+            <Label text="За обраний період" styleClass="stat-hint"/>
+          </VBox>
+
+        </HBox>
+      </VBox>
+
+      <!-- Bookings -->
+      <VBox styleClass="stat-card-v2" HBox.hgrow="ALWAYS" spacing="0">
+        <HBox alignment="CENTER_LEFT" spacing="0">
+          <Region styleClass="stat-accent-bar-teal"/>
+          <VBox HBox.hgrow="ALWAYS" spacing="6" style="-fx-padding:0 16 0 14;">
+            <Label text="БРОНЮВАНЬ (АКТИВНИХ)" styleClass="stat-label-v2"/>
+            <Label fx:id="statBookings" text="..." styleClass="stat-value-v2-green"/>
+            <Label text="Підтверджені броні" styleClass="stat-hint"/>
+          </VBox>
+
+        </HBox>
+      </VBox>
+
+      <!-- Avg check -->
+      <VBox styleClass="stat-card-v2" HBox.hgrow="ALWAYS" spacing="0">
+        <HBox alignment="CENTER_LEFT" spacing="0">
+          <Region styleClass="stat-accent-bar-olive"/>
+          <VBox HBox.hgrow="ALWAYS" spacing="6" style="-fx-padding:0 16 0 14;">
+            <Label text="СЕРЕДНІЙ ЧЕК" styleClass="stat-label-v2"/>
+            <Label fx:id="statAvgCheck" text="..." styleClass="stat-value-v2"/>
+            <Label text="Середнє на бронювання" styleClass="stat-hint"/>
+          </VBox>
+
+        </HBox>
+      </VBox>
+
+      <!-- Fill rate -->
+      <VBox styleClass="stat-card-v2" HBox.hgrow="ALWAYS" spacing="0">
+        <HBox alignment="CENTER_LEFT" spacing="0">
+          <Region styleClass="stat-accent-bar-sage"/>
+          <VBox HBox.hgrow="ALWAYS" spacing="6" style="-fx-padding:0 16 0 14;">
+            <Label text="ЗАВАНТАЖЕНІСТЬ" styleClass="stat-label-v2"/>
+            <Label fx:id="statFill" text="..." styleClass="stat-value-v2"/>
+            <Label text="Середня квота турів" styleClass="stat-hint"/>
+          </VBox>
+
+        </HBox>
+      </VBox>
+    </HBox>
+
+    <!-- Charts row -->
+    <HBox spacing="16">
+      <!-- Bar chart -->
+      <VBox styleClass="chart-panel-v2" HBox.hgrow="ALWAYS" spacing="14">
+        <HBox alignment="CENTER_LEFT">
+          <VBox HBox.hgrow="ALWAYS" spacing="3">
+            <Label text="Виручка по місяцях" styleClass="section-title"/>
+            <Label text="Динаміка доходів за рік" styleClass="stat-hint"/>
+          </VBox>
+        </HBox>
+        <HBox fx:id="reportChartBars" alignment="BOTTOM_LEFT" spacing="6" prefHeight="100"/>
+      </VBox>
+
+      <!-- Popular directions — динамічно через ReportService.getTopCountries() -->
+      <VBox styleClass="panel-card-v2" prefWidth="270" spacing="16">
+        <Label text="Популярні напрямки" styleClass="section-title"/>
+        <VBox fx:id="directionsBox" spacing="12"/>
+      </VBox>
+    </HBox>
+
+    <!-- Tour quota table -->
+    <VBox styleClass="table-card" spacing="0">
+      <HBox styleClass="table-toolbar">
+        <VBox HBox.hgrow="ALWAYS" spacing="3">
+          <Label text="Завантаженість турів" styleClass="table-title-lbl"/>
+          <Label text="Показники бронювань та заповнення" styleClass="stat-hint"/>
+        </VBox>
+        <Button text="Експорт Excel ↓" styleClass="add-btn" onAction="#onExportExcel"/>
+      </HBox>
+      <HBox styleClass="table-head-row" spacing="0">
+        <Label text="ТУР" styleClass="th-lbl" HBox.hgrow="ALWAYS"/>
+        <Label text="ВИРУЧКА" styleClass="th-lbl" prefWidth="130"/>
+        <Label text="ЗАВАНТАЖ." styleClass="th-lbl" prefWidth="200"/>
+      </HBox>
+      <VBox fx:id="tourQuotaRows"/>
+    </VBox>
+
+  </VBox>
+</ScrollPane>

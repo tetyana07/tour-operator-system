@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<!-- Dropdown-панель профілю — показується під user-chip у topbar -->
+<VBox fx:id="profilePanel" styleClass="profile-dropdown-panel" maxWidth="380"
+  xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.ProfilePanelController">
+
+  <!-- HEADER: аватар + ім'я + форма -->
+  <VBox styleClass="pd-header" spacing="14">
+    <HBox spacing="14" alignment="CENTER_LEFT">
+      <Label fx:id="pdAvatar" text="??" styleClass="pd-avatar"/>
+      <VBox spacing="3">
+        <Label fx:id="pdFullName" text="" styleClass="pd-name"/>
+        <Label fx:id="pdRole"     text="" styleClass="pd-role"/>
+        <Label text="У системі з лютого 2024" styleClass="pd-since"/>
+      </VBox>
+    </HBox>
+    <!-- форма -->
+    <GridPane hgap="10" vgap="8">
+      <columnConstraints>
+        <javafx.scene.layout.ColumnConstraints hgrow="ALWAYS"/>
+        <javafx.scene.layout.ColumnConstraints hgrow="ALWAYS"/>
+      </columnConstraints>
+      <VBox spacing="3" GridPane.columnIndex="0" GridPane.rowIndex="0">
+        <Label text="ІМ'Я" styleClass="field-label"/>
+        <TextField fx:id="fieldFirstName" styleClass="field-input"/>
+      </VBox>
+      <VBox spacing="3" GridPane.columnIndex="1" GridPane.rowIndex="0">
+        <Label text="ПРІЗВИЩЕ" styleClass="field-label"/>
+        <TextField fx:id="fieldLastName" styleClass="field-input"/>
+      </VBox>
+      <VBox spacing="3" GridPane.columnIndex="0" GridPane.rowIndex="1">
+        <Label text="EMAIL" styleClass="field-label"/>
+        <TextField fx:id="fieldEmail" styleClass="field-input"/>
+      </VBox>
+      <VBox spacing="3" GridPane.columnIndex="1" GridPane.rowIndex="1">
+        <Label text="ТЕЛЕФОН" styleClass="field-label"/>
+        <TextField fx:id="fieldPhone" styleClass="field-input"/>
+      </VBox>
+    </GridPane>
+  </VBox>
+
+  <!-- СЕКЦІЯ: валюта -->
+  <VBox styleClass="pd-section" spacing="10">
+    <Label text="ВАЛЮТА" styleClass="pd-section-title"/>
+    <VBox spacing="3">
+      <ComboBox fx:id="fieldCurrency" styleClass="field-combo" maxWidth="Infinity" onAction="#onCurrencyChanged"/>
+    </VBox>
+  </VBox>
+
+  <!-- Курс-прев'ю — показується після вибору валюти -->
+  <Label fx:id="previewLabel" text="" visible="false" managed="false"
+    style="-fx-text-fill:#8fcba3; -fx-font-size:12px; -fx-padding:0 20 0 20;"/>
+
+  <!-- FOOTER -->
+  <HBox styleClass="pd-footer" alignment="CENTER_RIGHT" spacing="8">
+    <Button text="Вийти" styleClass="btn-logout" onAction="#onLogout" HBox.hgrow="NEVER"/>
+    <Region HBox.hgrow="ALWAYS"/>
+    <Button text="Скасувати" styleClass="btn-ghost"  onAction="#onCancel"/>
+    <Button text="Зберегти"  styleClass="add-btn"    onAction="#onSave"/>
+  </HBox>
+
+</VBox>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+<VBox styleClass="icon-sidebar" xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.SidebarController"
+  alignment="TOP_CENTER">
+
+  <!-- Group 1: Main navigation -->
+  <Button fx:id="btnTours" styleClass="nav-icon-btn-active"
+    onAction="#onNav" userData="tours" maxWidth="Infinity">
+    <graphic><FontIcon iconLiteral="fas-plane" iconSize="20"/></graphic>
+  </Button>
+
+  <!-- Bookings -->
+  <Button fx:id="btnBookings" styleClass="nav-icon-btn"
+    onAction="#onNav" userData="bookings" maxWidth="Infinity">
+    <graphic><FontIcon iconLiteral="fas-clipboard-list" iconSize="20"/></graphic>
+  </Button>
+
+  <Button fx:id="btnPayments" styleClass="nav-icon-btn"
+    onAction="#onNav" userData="payments" maxWidth="Infinity">
+    <graphic><FontIcon iconLiteral="fas-credit-card" iconSize="20"/></graphic>
+  </Button>
+
+  <!-- Separator line -->
+  <Pane styleClass="sidebar-sep" maxWidth="Infinity">
+    <VBox.margin><Insets top="6" bottom="6" left="12" right="12"/></VBox.margin>
+  </Pane>
+
+  <!-- Group 2: Management -->
+  <Button fx:id="btnClients" styleClass="nav-icon-btn"
+    onAction="#onNav" userData="clients" maxWidth="Infinity">
+    <graphic><FontIcon iconLiteral="fas-users" iconSize="20"/></graphic>
+  </Button>
+  <Button fx:id="btnPromos" styleClass="nav-icon-btn"
+    onAction="#onNav" userData="promos" maxWidth="Infinity">
+    <graphic><FontIcon iconLiteral="fas-tag" iconSize="20"/></graphic>
+  </Button>
+  <Button fx:id="btnReports" styleClass="nav-icon-btn"
+    onAction="#onNav" userData="reports" maxWidth="Infinity">
+    <graphic><FontIcon iconLiteral="fas-chart-bar" iconSize="20"/></graphic>
+  </Button>
+
+  <!-- Push settings to bottom -->
+  <Region VBox.vgrow="ALWAYS"/>
+
+  <!-- Separator before settings -->
+  <Pane styleClass="sidebar-sep" maxWidth="Infinity">
+    <VBox.margin><Insets top="6" bottom="6" left="12" right="12"/></VBox.margin>
+  </Pane>
+
+  <Button fx:id="btnSettings" styleClass="nav-icon-btn"
+    onAction="#onNav" userData="settings" maxWidth="Infinity">
+    <graphic><FontIcon iconLiteral="fas-cog" iconSize="20"/></graphic>
+  </Button>
+
+</VBox>

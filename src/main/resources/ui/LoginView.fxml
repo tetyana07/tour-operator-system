@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.*?>
+<StackPane xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.LoginController"
+  styleClass="auth-screen">
+
+  <!-- Фонові кола -->
+  <Pane styleClass="auth-bg-circle-1" prefWidth="400" prefHeight="400"
+    StackPane.alignment="TOP_RIGHT"/>
+  <Pane styleClass="auth-bg-circle-2" prefWidth="250" prefHeight="250"
+    StackPane.alignment="BOTTOM_LEFT"/>
+  <Pane styleClass="auth-bg-circle-3" prefWidth="160" prefHeight="160"/>
+
+  <!-- FlowPane не розтягує дітей по вертикалі — картка матиме природній розмір -->
+  <FlowPane alignment="CENTER" StackPane.alignment="CENTER"
+    prefWrapLength="9999" columnHalignment="CENTER">
+
+    <VBox styleClass="auth-card" prefWidth="420" maxWidth="420" spacing="0">
+
+      <!-- Логотип -->
+      <HBox alignment="CENTER_LEFT" spacing="10">
+        <HBox.margin><Insets bottom="20"/></HBox.margin>
+        <Pane styleClass="auth-logo-icon" prefWidth="40" prefHeight="40">
+          <Pane styleClass="auth-logo-leaf" prefWidth="18" prefHeight="22"
+            layoutX="11" layoutY="9"/>
+        </Pane>
+        <Label styleClass="auth-logo-text" text="AYVO"/>
+      </HBox>
+
+      <!-- Вкладки -->
+      <HBox styleClass="auth-tabs" spacing="4">
+        <HBox.margin><Insets bottom="20"/></HBox.margin>
+        <Button fx:id="tabLogin" styleClass="auth-tab,auth-tab-active"
+          text="Увійти" maxWidth="Infinity" HBox.hgrow="ALWAYS"
+          onAction="#showLogin"/>
+        <Button fx:id="tabRegister" styleClass="auth-tab"
+          text="Реєстрація" maxWidth="Infinity" HBox.hgrow="ALWAYS"
+          onAction="#showRegister"/>
+      </HBox>
+
+      <!-- LOGIN панель -->
+      <VBox fx:id="panelLogin" spacing="14">
+        <VBox spacing="5">
+          <Label styleClass="field-label" text="EMAIL"/>
+          <TextField fx:id="loginEmail" styleClass="field-input"
+            promptText="your@email.com"/>
+        </VBox>
+        <VBox spacing="5">
+          <Label styleClass="field-label" text="ПАРОЛЬ"/>
+          <PasswordField fx:id="loginPassword" styleClass="field-input"
+            promptText="••••••••"/>
+        </VBox>
+        <Label fx:id="loginError" styleClass="auth-error-label"
+          text="" wrapText="true" visible="false" managed="false"/>
+        <Button styleClass="auth-btn" text="Увійти"
+          maxWidth="Infinity" onAction="#onLogin">
+          <VBox.margin><Insets top="4"/></VBox.margin>
+        </Button>
+        <Label styleClass="auth-hint"
+          text="Немає акаунту? Перейдіть на вкладку «Реєстрація»"
+          wrapText="true" alignment="CENTER" maxWidth="360"/>
+      </VBox>
+
+      <VBox fx:id="panelRegister" spacing="14" visible="false" managed="false">
+        <VBox spacing="5">
+          <Label styleClass="field-label" text="ІМ'Я ТА ПРІЗВИЩЕ"/>
+          <TextField fx:id="regName" styleClass="field-input"
+            promptText="Марія Коваленко"/>
+        </VBox>
+        <VBox spacing="5">
+          <Label styleClass="field-label" text="EMAIL"/>
+          <TextField fx:id="regEmail" styleClass="field-input"
+            promptText="your@email.com"/>
+        </VBox>
+        <VBox spacing="5">
+          <Label styleClass="field-label" text="ТЕЛЕФОН (необов'язково)"/>
+          <TextField fx:id="regPhone" styleClass="field-input"
+            promptText="+380 XX XXX XX XX"/>
+        </VBox>
+        <VBox spacing="5">
+          <Label styleClass="field-label" text="ПАРОЛЬ (мін. 8 символів, літера + цифра)"/>
+          <PasswordField fx:id="regPassword" styleClass="field-input"
+            promptText="Мінімум 8 символів"/>
+        </VBox>
+        <VBox spacing="5">
+          <Label styleClass="field-label" text="ПІДТВЕРДІТЬ ПАРОЛЬ"/>
+          <PasswordField fx:id="regPasswordConfirm" styleClass="field-input"
+            promptText="Повторіть пароль"/>
+        </VBox>
+        <Button styleClass="auth-btn" text="Зареєструватись"
+          maxWidth="Infinity" onAction="#onRegister">
+          <VBox.margin><Insets top="4"/></VBox.margin>
+        </Button>
+        <Label fx:id="regHint" styleClass="auth-hint" wrapText="true"
+          text="Після реєстрації надійде лист для підтвердження email"
+          alignment="CENTER" maxWidth="360"/>
+      </VBox>
+
+    </VBox>
+
+  </FlowPane>
+
+</StackPane>

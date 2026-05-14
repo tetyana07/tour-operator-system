@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.shape.*?>
+<HBox styleClass="bottom-strip" xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.BottomStripController"
+  alignment="CENTER_LEFT" spacing="20">
+
+  <!-- Годинник -->
+  <Label fx:id="clockLabel" text="--:--:--" styleClass="strip-text"/>
+
+
+</HBox>

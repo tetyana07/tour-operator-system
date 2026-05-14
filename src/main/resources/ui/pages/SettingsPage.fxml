@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<ScrollPane styleClass="content-scroll" fitToWidth="true" xmlns:fx="http://javafx.com/fxml">
+  <VBox styleClass="content-area" spacing="22">
+
+    <HBox alignment="CENTER_LEFT">
+      <VBox HBox.hgrow="ALWAYS" spacing="3">
+        <Label text="Налаштування" styleClass="page-title"/>
+        <Label text="Інтерфейс, сповіщення, інтеграції та безпека" styleClass="page-sub"/>
+      </VBox>
+    </HBox>
+
+    <!-- 2-col: nav + content -->
+    <HBox spacing="20" alignment="TOP_LEFT">
+
+      <!-- Ліва навігація -->
+      <VBox styleClass="settings-nav-card" spacing="4" minWidth="210" prefWidth="210">
+        <Button text="🖥   Інтерфейс"   styleClass="s-nav-item-active" maxWidth="Infinity"/>
+        <Button text="🔔  Сповіщення"   styleClass="s-nav-item"        maxWidth="Infinity"/>
+        <Region styleClass="s-nav-sep-line"/>
+        <Button text="🔗  Інтеграції"   styleClass="s-nav-item"        maxWidth="Infinity"/>
+        <Button text="👥  Команда"       styleClass="s-nav-item"        maxWidth="Infinity"/>
+        <Region styleClass="s-nav-sep-line"/>
+        <Button text="🛡   Безпека"      styleClass="s-nav-item"        maxWidth="Infinity"/>
+      </VBox>
+
+      <!-- Правий контент -->
+      <VBox HBox.hgrow="ALWAYS" spacing="16">
+
+        <!-- ── Інтерфейс ── -->
+        <VBox styleClass="panel-card" spacing="0">
+          <VBox styleClass="settings-card-head" spacing="2">
+            <Label text="Інтерфейс" styleClass="settings-card-title"/>
+            <Label text="Мова, тема, формат дат і відображення" styleClass="settings-card-sub"/>
+          </VBox>
+          <VBox styleClass="settings-card-body">
+            <GridPane hgap="16" vgap="12">
+              <columnConstraints>
+                <ColumnConstraints hgrow="ALWAYS"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+              </columnConstraints>
+              <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                <Label text="МОВА ІНТЕРФЕЙСУ" styleClass="field-label"/>
+                <ComboBox value="Українська" styleClass="field-combo" maxWidth="Infinity"/>
+              </VBox>
+              <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                <Label text="ЧАСОВИЙ ПОЯС" styleClass="field-label"/>
+                <ComboBox value="UTC+3 (Київ)" styleClass="field-combo" maxWidth="Infinity"/>
+              </VBox>
+              <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                <Label text="ФОРМАТ ДАТИ" styleClass="field-label"/>
+                <ComboBox value="ДД.ММ.РРРР" styleClass="field-combo" maxWidth="Infinity"/>
+              </VBox>
+              <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                <Label text="ВАЛЮТА" styleClass="field-label"/>
+                <ComboBox value="₴ UAH" styleClass="field-combo" maxWidth="Infinity"/>
+              </VBox>
+              <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                <Label text="ТЕМА ОФОРМЛЕННЯ" styleClass="field-label"/>
+                <ComboBox value="Світла" styleClass="field-combo" maxWidth="Infinity"/>
+              </VBox>
+              <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                <Label text="КОМПАКТНИЙ РЕЖИМ" styleClass="field-label"/>
+                <ComboBox value="Вимкнено" styleClass="field-combo" maxWidth="Infinity"/>
+              </VBox>
+            </GridPane>
+            <HBox style="-fx-padding:14 0 0 0;">
+              <Region HBox.hgrow="ALWAYS"/>
+              <Button text="Зберегти зміни" styleClass="add-btn"/>
+            </HBox>
+          </VBox>
+        </VBox>
+
+        <!-- ── Сповіщення ── -->
+        <VBox styleClass="panel-card" spacing="0">
+          <VBox styleClass="settings-card-head" spacing="2">
+            <Label text="Сповіщення" styleClass="settings-card-title"/>
+            <Label text="Налаштування email та push-сповіщень" styleClass="settings-card-sub"/>
+          </VBox>
+          <VBox styleClass="settings-card-body">
+            <HBox styleClass="toggle-row" alignment="CENTER_LEFT" spacing="12">
+              <VBox HBox.hgrow="ALWAYS" spacing="2">
+                <Label text="Нові бронювання" styleClass="toggle-lbl"/>
+                <Label text="Отримувати сповіщення про кожне нове бронювання" styleClass="toggle-desc"/>
+              </VBox>
+              <Label text="● ВКЛ" styleClass="toggle-switch-on"/>
+            </HBox>
+            <HBox styleClass="toggle-row" alignment="CENTER_LEFT" spacing="12">
+              <VBox HBox.hgrow="ALWAYS" spacing="2">
+                <Label text="Підтвердження оплат" styleClass="toggle-lbl"/>
+                <Label text="Сповіщення після успішної транзакції" styleClass="toggle-desc"/>
+              </VBox>
+              <Label text="● ВКЛ" styleClass="toggle-switch-on"/>
+            </HBox>
+            <HBox styleClass="toggle-row" alignment="CENTER_LEFT" spacing="12">
+              <VBox HBox.hgrow="ALWAYS" spacing="2">
+                <Label text="Скасування турів" styleClass="toggle-lbl"/>
+                <Label text="Сповіщення при скасуванні клієнтом" styleClass="toggle-desc"/>
+              </VBox>
+              <Label text="○ ВИКЛ" styleClass="toggle-switch-off"/>
+            </HBox>
+            <HBox styleClass="toggle-row" alignment="CENTER_LEFT" spacing="12">
+              <VBox HBox.hgrow="ALWAYS" spacing="2">
+                <Label text="Звіти (щотижневі)" styleClass="toggle-lbl"/>
+                <Label text="Автоматичний звіт на email щопонеділка" styleClass="toggle-desc"/>
+              </VBox>
+              <Label text="● ВКЛ" styleClass="toggle-switch-on"/>
+            </HBox>
+          </VBox>
+        </VBox>
+
+        <!-- ── Інтеграції ── -->
+        <VBox styleClass="panel-card" spacing="0">
+          <VBox styleClass="settings-card-head" spacing="2">
+            <Label text="Інтеграції" styleClass="settings-card-title"/>
+            <Label text="Підключені сервіси та API" styleClass="settings-card-sub"/>
+          </VBox>
+          <VBox styleClass="settings-card-body">
+            <!-- PostgreSQL -->
+            <HBox styleClass="integr-row" alignment="CENTER_LEFT" spacing="12">
+              <Label text="🗄" styleClass="integr-icon-box" style="-fx-background-color:#e8f5e9;"/>
+              <VBox HBox.hgrow="ALWAYS" spacing="2">
+                <Label text="PostgreSQL" styleClass="integr-name"/>
+                <Label text="Підключено · tour_operator_db" styleClass="integr-status-connected"/>
+              </VBox>
+              <Label text="Підключено" styleClass="pill-connected"/>
+            </HBox>
+            <!-- OpenWeather -->
+            <HBox styleClass="integr-row" alignment="CENTER_LEFT" spacing="12">
+              <Label text="🌤" styleClass="integr-icon-box" style="-fx-background-color:#e3f2fd;"/>
+              <VBox HBox.hgrow="ALWAYS" spacing="2">
+                <Label text="OpenWeather API" styleClass="integr-name"/>
+                <Label text="Підключено · безкоштовний план" styleClass="integr-status-connected"/>
+              </VBox>
+              <Label text="Підключено" styleClass="pill-connected"/>
+            </HBox>
+            <!-- SMTP -->
+            <HBox styleClass="integr-row" alignment="CENTER_LEFT" spacing="12">
+              <Label text="📧" styleClass="integr-icon-box" style="-fx-background-color:#fff3e0;"/>
+              <VBox HBox.hgrow="ALWAYS" spacing="2">
+                <Label text="SMTP Email (Gmail)" styleClass="integr-name"/>
+                <Label text="Не підключено" styleClass="integr-status-disconnected"/>
+              </VBox>
+              <Label text="Не підключено" styleClass="pill-disconnected"/>
+              <Button text="Підключити" styleClass="btn-ghost"/>
+            </HBox>
+            <!-- LiqPay -->
+            <HBox styleClass="integr-row" alignment="CENTER_LEFT" spacing="12">
+              <Label text="💳" styleClass="integr-icon-box" style="-fx-background-color:#f3e5f5;"/>
+              <VBox HBox.hgrow="ALWAYS" spacing="2">
+                <Label text="LiqPay / Stripe" styleClass="integr-name"/>
+                <Label text="Не підключено" styleClass="integr-status-disconnected"/>
+              </VBox>
+              <Label text="Не підключено" styleClass="pill-disconnected"/>
+              <Button text="Підключити" styleClass="btn-ghost"/>
+            </HBox>
+          </VBox>
+        </VBox>
+
+        <!-- ── Команда ── -->
+        <VBox styleClass="panel-card" spacing="0">
+          <VBox styleClass="settings-card-head" spacing="2">
+            <Label text="Команда" styleClass="settings-card-title"/>
+            <Label text="Доступи та ролі користувачів системи" styleClass="settings-card-sub"/>
+          </VBox>
+          <VBox styleClass="settings-card-body">
+            <GridPane hgap="0" vgap="0" style="-fx-padding:0 0 8 0;">
+              <columnConstraints>
+                <ColumnConstraints percentWidth="35"/>
+                <ColumnConstraints percentWidth="30"/>
+                <ColumnConstraints percentWidth="20"/>
+                <ColumnConstraints percentWidth="15"/>
+              </columnConstraints>
+              <Label text="КОРИСТУВАЧ"  style="-fx-font-size:10.5px;-fx-font-weight:bold;-fx-text-fill:#8a9a85;" GridPane.columnIndex="0"/>
+              <Label text="EMAIL"       style="-fx-font-size:10.5px;-fx-font-weight:bold;-fx-text-fill:#8a9a85;" GridPane.columnIndex="1"/>
+              <Label text="РОЛЬ"        style="-fx-font-size:10.5px;-fx-font-weight:bold;-fx-text-fill:#8a9a85;" GridPane.columnIndex="2"/>
+              <Label text="СТАТУС"      style="-fx-font-size:10.5px;-fx-font-weight:bold;-fx-text-fill:#8a9a85;" GridPane.columnIndex="3"/>
+            </GridPane>
+            <!-- member 1 -->
+            <GridPane styleClass="toggle-row" hgap="0" vgap="0">
+              <columnConstraints>
+                <ColumnConstraints percentWidth="35"/>
+                <ColumnConstraints percentWidth="30"/>
+                <ColumnConstraints percentWidth="20"/>
+                <ColumnConstraints percentWidth="15"/>
+              </columnConstraints>
+              <HBox GridPane.columnIndex="0" alignment="CENTER_LEFT" spacing="8">
+                <Label text="БТ" styleClass="c-ava ca-a"/>
+                <Label text="Бецанич Тетяна" styleClass="td-normal"/>
+              </HBox>
+              <Label text="betsanych@tourvision.ua" styleClass="td-muted"      GridPane.columnIndex="1"/>
+              <Label text="Адміністратор"            styleClass="td-normal"     GridPane.columnIndex="2"/>
+              <Label text="Активний"                 styleClass="pill-active"   GridPane.columnIndex="3"/>
+            </GridPane>
+            <!-- member 2 -->
+            <GridPane styleClass="toggle-row" hgap="0" vgap="0">
+              <columnConstraints>
+                <ColumnConstraints percentWidth="35"/>
+                <ColumnConstraints percentWidth="30"/>
+                <ColumnConstraints percentWidth="20"/>
+                <ColumnConstraints percentWidth="15"/>
+              </columnConstraints>
+              <HBox GridPane.columnIndex="0" alignment="CENTER_LEFT" spacing="8">
+                <Label text="КВ" styleClass="c-ava ca-b"/>
+                <Label text="Коваленко Вікторія" styleClass="td-normal"/>
+              </HBox>
+              <Label text="kovalenko@tourvision.ua" styleClass="td-muted"      GridPane.columnIndex="1"/>
+              <Label text="Менеджер"                styleClass="td-normal"     GridPane.columnIndex="2"/>
+              <Label text="Активний"                styleClass="pill-active"   GridPane.columnIndex="3"/>
+            </GridPane>
+            <!-- member 3 -->
+            <GridPane styleClass="toggle-row" hgap="0" vgap="0">
+              <columnConstraints>
+                <ColumnConstraints percentWidth="35"/>
+                <ColumnConstraints percentWidth="30"/>
+                <ColumnConstraints percentWidth="20"/>
+                <ColumnConstraints percentWidth="15"/>
+              </columnConstraints>
+              <HBox GridPane.columnIndex="0" alignment="CENTER_LEFT" spacing="8">
+                <Label text="МС" styleClass="c-ava ca-c"/>
+                <Label text="Мороз Сергій" styleClass="td-normal"/>
+              </HBox>
+              <Label text="moroz@tourvision.ua" styleClass="td-muted"    GridPane.columnIndex="1"/>
+              <Label text="Агент"               styleClass="td-normal"   GridPane.columnIndex="2"/>
+              <Label text="Відпустка"           styleClass="pill-expired" GridPane.columnIndex="3"/>
+            </GridPane>
+            <HBox style="-fx-padding:12 0 0 0;">
+              <Button text="+ Запросити учасника" styleClass="btn-ghost"/>
+            </HBox>
+          </VBox>
+        </VBox>
+
+        <!-- ── Безпека ── -->
+        <VBox styleClass="panel-card" spacing="0">
+          <VBox styleClass="settings-card-head" spacing="2">
+            <Label text="Безпека" styleClass="settings-card-title"/>
+            <Label text="Пароль, двофакторна автентифікація та сесії" styleClass="settings-card-sub"/>
+          </VBox>
+          <VBox styleClass="settings-card-body">
+            <HBox styleClass="toggle-row" alignment="CENTER_LEFT" spacing="12">
+              <VBox HBox.hgrow="ALWAYS" spacing="2">
+                <Label text="Двофакторна автентифікація" styleClass="toggle-lbl"/>
+                <Label text="Додатковий захист через SMS або застосунок" styleClass="toggle-desc"/>
+              </VBox>
+              <Label text="○ ВИКЛ" styleClass="toggle-switch-off"/>
+              <Button text="Увімкнути" styleClass="btn-ghost"/>
+            </HBox>
+            <HBox styleClass="toggle-row" alignment="CENTER_LEFT" spacing="12">
+              <VBox HBox.hgrow="ALWAYS" spacing="2">
+                <Label text="Сповіщення про вхід" styleClass="toggle-lbl"/>
+                <Label text="Отримувати email при кожному новому вході" styleClass="toggle-desc"/>
+              </VBox>
+              <Label text="● ВКЛ" styleClass="toggle-switch-on"/>
+            </HBox>
+            <HBox styleClass="toggle-row" alignment="CENTER_LEFT" spacing="12">
+              <VBox HBox.hgrow="ALWAYS" spacing="2">
+                <Label text="Пароль" styleClass="toggle-lbl"/>
+                <Label text="Востаннє змінено 3 місяці тому" styleClass="toggle-desc"/>
+              </VBox>
+              <Button text="Змінити пароль" styleClass="btn-ghost"/>
+            </HBox>
+          </VBox>
+        </VBox>
+
+        <!-- ── Небезпечна зона ── -->
+        <VBox styleClass="panel-card" spacing="0"
+          style="-fx-border-color:rgba(184,60,42,0.20);-fx-background-color:rgba(253,232,232,0.18);">
+          <VBox styleClass="settings-card-head" spacing="2">
+            <Label text="Небезпечна зона"
+              style="-fx-font-family:Syne;-fx-font-size:15px;-fx-font-weight:bold;-fx-text-fill:#8a2020;"/>
+            <Label text="Незворотні дії — будьте обережні" styleClass="settings-card-sub"/>
+          </VBox>
+          <VBox styleClass="settings-card-body" spacing="12">
+            <HBox alignment="CENTER_LEFT" spacing="16">
+              <VBox HBox.hgrow="ALWAYS" spacing="2">
+                <Label text="Очистити кеш системи" styleClass="toggle-lbl"/>
+                <Label text="Видалити тимчасові файли та кеш бази даних" styleClass="toggle-desc"/>
+              </VBox>
+              <Button text="Очистити кеш" styleClass="btn-danger"/>
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="16">
+              <VBox HBox.hgrow="ALWAYS" spacing="2">
+                <Label text="Скинути налаштування" styleClass="toggle-lbl"/>
+                <Label text="Повернути всі параметри до стандартних значень" styleClass="toggle-desc"/>
+              </VBox>
+              <Button text="Скинути все" styleClass="btn-danger"/>
+            </HBox>
+          </VBox>
+        </VBox>
+
+      </VBox>
+    </HBox>
+  </VBox>
+</ScrollPane>

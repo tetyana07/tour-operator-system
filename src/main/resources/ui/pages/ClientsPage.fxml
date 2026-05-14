@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<ScrollPane styleClass="content-scroll" fitToWidth="true" xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.ClientsController">
+  <VBox styleClass="content-area" spacing="22">
+
+    <!-- HEADER -->
+    <HBox alignment="CENTER_LEFT">
+      <VBox HBox.hgrow="ALWAYS" spacing="3">
+        <Label text="Клієнти" styleClass="page-title"/>
+        <Label fx:id="clientCountLabel" text="" styleClass="page-sub"/>
+      </VBox>
+      <Button text="+ Новий клієнт" styleClass="add-btn" onAction="#onAddClient"/>
+    </HBox>
+
+    <!-- STATS -->
+    <HBox spacing="14">
+      <VBox styleClass="stat-card" HBox.hgrow="ALWAYS" spacing="5">
+        <HBox alignment="CENTER_LEFT">
+          <Label text="ВСЬОГО" styleClass="stat-label" HBox.hgrow="ALWAYS"/>
+          <Label text="👥" styleClass="stat-icon-label"/>
+        </HBox>
+        <Label fx:id="statTotal" text="..." styleClass="stat-value"/>
+      </VBox>
+      <VBox styleClass="stat-card" HBox.hgrow="ALWAYS" spacing="5">
+        <HBox alignment="CENTER_LEFT">
+          <Label text="З БРОНЮВАННЯМИ" styleClass="stat-label" HBox.hgrow="ALWAYS"/>
+          <Label text="✅" styleClass="stat-icon-label"/>
+        </HBox>
+        <Label fx:id="statActive" text="..." styleClass="stat-value-green"/>
+      </VBox>
+      <VBox styleClass="stat-card" HBox.hgrow="ALWAYS" spacing="5">
+        <HBox alignment="CENTER_LEFT">
+          <Label text="ПОСТІЙНІ (3+)" styleClass="stat-label" HBox.hgrow="ALWAYS"/>
+          <Label text="⭐" styleClass="stat-icon-label"/>
+        </HBox>
+        <Label fx:id="statLoyal" text="..." styleClass="stat-value"/>
+      </VBox>
+      <VBox styleClass="stat-card" HBox.hgrow="ALWAYS" spacing="5">
+        <HBox alignment="CENTER_LEFT">
+          <Label text="СЕРЕДНІЙ LTV" styleClass="stat-label" HBox.hgrow="ALWAYS"/>
+          <Label text="💰" styleClass="stat-icon-label"/>
+        </HBox>
+        <Label fx:id="statLtv" text="..." styleClass="stat-value"/>
+      </VBox>
+    </HBox>
+
+    <!-- TABLE -->
+    <VBox styleClass="table-card" spacing="0" VBox.vgrow="ALWAYS">
+      <HBox styleClass="table-toolbar" alignment="CENTER_LEFT" spacing="10">
+        <Label text="База клієнтів" styleClass="table-title-lbl" HBox.hgrow="ALWAYS"/>
+        <ComboBox fx:id="clientFilter" styleClass="filter-combo"
+          promptText="Всі клієнти" prefWidth="170" onAction="#onClientFilter"/>
+      </HBox>
+
+      <TableView fx:id="clientsTable" VBox.vgrow="ALWAYS" styleClass="data-table"
+        style="-fx-border-color: transparent; -fx-background-color: transparent;">
+        <columns>
+          <TableColumn fx:id="colName"     text="КЛІЄНТ"        prefWidth="185"/>
+          <TableColumn fx:id="colEmail"    text="EMAIL"          prefWidth="190"/>
+          <TableColumn fx:id="colPhone"    text="ТЕЛЕФОН"        prefWidth="140"/>
+          <TableColumn fx:id="colBookings" text="БРОНЮВ."        prefWidth="80"/>
+          <TableColumn fx:id="colSpent"    text="СУМА ВИТРАТ"    prefWidth="130"/>
+          <TableColumn fx:id="colLastTour" text="ОСТАННЄ БРОН."  prefWidth="130"/>
+          <TableColumn fx:id="colStatus"   text="СТАТУС"         prefWidth="120"/>
+        </columns>
+      </TableView>
+
+      <!-- Кнопки дій -->
+      <HBox spacing="10" style="-fx-padding:12 22 14 22;" alignment="CENTER_LEFT">
+        <Label text="Оберіть клієнта:"
+          style="-fx-text-fill:#8a9a85;-fx-font-size:12px;"/>
+        <Button fx:id="btnEdit" text="Редагувати"
+          styleClass="add-btn" onAction="#onEditClient"
+          style="-fx-min-width:130; -fx-pref-height:36; -fx-font-size:13px;"/>
+        <Button fx:id="btnDelete" text="Видалити"
+          styleClass="btn-ghost" onAction="#onDeleteClient"
+          style="-fx-min-width:120; -fx-pref-height:36; -fx-font-size:13px; -fx-border-color:rgba(180,50,30,0.35); -fx-text-fill:#b83c2a;"/>
+      </HBox>
+
+    </VBox>
+  </VBox>
+</ScrollPane>

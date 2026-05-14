@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.layout.*?>
+<VBox styleClass="tour-card" xmlns:fx="http://javafx.com/fxml">
+
+  <!-- Зображення-градієнт -->
+  <StackPane styleClass="tour-image" alignment="BOTTOM_LEFT">
+    <padding><javafx.geometry.Insets bottom="10" left="12"/></padding>
+    <Label text="Туреччина, Анталья" styleClass="tour-destination"/>
+    <Label text="Відкрито" styleClass="status-pill-open"
+      StackPane.alignment="TOP_RIGHT">
+      <StackPane.margin>
+        <javafx.geometry.Insets top="10" right="10"/>
+      </StackPane.margin>
+    </Label>
+  </StackPane>
+
+  <!-- Тіло -->
+  <VBox styleClass="tour-body">
+    <HBox alignment="CENTER_LEFT">
+      <Label text="Преміум All-Inclusive" styleClass="tour-name" HBox.hgrow="ALWAYS"/>
+      <Label text="₴34 800" styleClass="tour-price"/>
+    </HBox>
+    <HBox spacing="12">
+      <Label text="📅 12–19 трав" style="-fx-font-size:11;-fx-text-fill:#8a9a85;"/>
+      <Label text="👤 18 осіб"    style="-fx-font-size:11;-fx-text-fill:#8a9a85;"/>
+    </HBox>
+    <HBox alignment="CENTER_LEFT" spacing="8">
+      <Label text="Квота: 78%" style="-fx-font-size:10;-fx-text-fill:#8a9a85;"/>
+      <Label text="14/18" style="-fx-font-size:10;-fx-text-fill:#8a9a85;" HBox.hgrow="ALWAYS"/>
+    </HBox>
+    <ProgressBar progress="0.78" styleClass="quota-bar" maxWidth="Infinity"/>
+  </VBox>
+</VBox>

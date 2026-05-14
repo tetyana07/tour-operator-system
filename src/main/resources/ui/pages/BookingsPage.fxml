@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<ScrollPane styleClass="content-scroll" fitToWidth="true" xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.BookingsController">
+  <VBox styleClass="content-area" spacing="22">
+
+    <!-- HEADER -->
+    <HBox alignment="CENTER_LEFT">
+      <VBox HBox.hgrow="ALWAYS" spacing="3">
+        <Label fx:id="pageTitle" text="Бронювання" styleClass="page-title"/>
+        <Label fx:id="pageSubtitle" text="" style="-fx-text-fill:#6a8a5a; -fx-font-size:12px;"
+          visible="false" managed="false"/>
+      </VBox>
+      <Button fx:id="btnNewBooking" text="+ Нове бронювання" styleClass="add-btn"
+        onAction="#onNewBooking"/>
+    </HBox>
+
+    <!-- STATS -->
+    <HBox spacing="14">
+      <VBox styleClass="stat-card" HBox.hgrow="ALWAYS" spacing="5">
+        <HBox alignment="CENTER_LEFT">
+          <Label text="ВСЬОГО" styleClass="stat-label" HBox.hgrow="ALWAYS"/>
+          <Label text="📄" styleClass="stat-icon-label"/>
+        </HBox>
+        <Label fx:id="statTotal" text="..." styleClass="stat-value"/>
+      </VBox>
+      <VBox styleClass="stat-card" HBox.hgrow="ALWAYS" spacing="5">
+        <HBox alignment="CENTER_LEFT">
+          <Label text="ПІДТВЕРДЖЕНО" styleClass="stat-label" HBox.hgrow="ALWAYS"/>
+          <Label text="✅" styleClass="stat-icon-label"/>
+        </HBox>
+        <Label fx:id="statConfirmed" text="..." styleClass="stat-value-green"/>
+      </VBox>
+      <VBox styleClass="stat-card" HBox.hgrow="ALWAYS" spacing="5">
+        <HBox alignment="CENTER_LEFT">
+          <Label text="СПЛАЧЕНО" styleClass="stat-label" HBox.hgrow="ALWAYS"/>
+          <Label text="💳" styleClass="stat-icon-label"/>
+        </HBox>
+        <Label fx:id="statPaid" text="..." styleClass="stat-value-amber"/>
+      </VBox>
+      <VBox styleClass="stat-card" HBox.hgrow="ALWAYS" spacing="5">
+        <HBox alignment="CENTER_LEFT">
+          <Label text="СКАСОВАНО" styleClass="stat-label" HBox.hgrow="ALWAYS"/>
+          <Label text="❌" styleClass="stat-icon-label"/>
+        </HBox>
+        <Label fx:id="statCancelled" text="..." styleClass="stat-value-red"/>
+      </VBox>
+    </HBox>
+
+    <!-- Toolbar / filters -->
+    <HBox alignment="CENTER_LEFT" spacing="10">
+      <Label fx:id="bookingCountLabel" text="Список бронювань"
+        styleClass="table-title-lbl" HBox.hgrow="ALWAYS"/>
+      <ComboBox fx:id="statusFilter" styleClass="filter-combo"
+        promptText="Всі стату..." prefWidth="148" onAction="#onStatusFilter"/>
+      <ComboBox fx:id="tourFilter" styleClass="filter-combo"
+        promptText="Всі тури" prefWidth="148" onAction="#onTourFilter"/>
+    </HBox>
+
+    <!-- ADMIN VIEW: таблиця + кнопки -->
+    <VBox fx:id="adminView" styleClass="table-card" spacing="0" VBox.vgrow="ALWAYS">
+      <TableView fx:id="bookingsTable" VBox.vgrow="ALWAYS" styleClass="data-table"
+        style="-fx-border-color:transparent; -fx-background-color:transparent;">
+        <columns>
+          <TableColumn fx:id="colId"     text="#"        prefWidth="110"/>
+          <TableColumn fx:id="colClient" text="КЛІЄНТ"   prefWidth="180"/>
+          <TableColumn fx:id="colTour"   text="ТУР"      prefWidth="200"/>
+          <TableColumn fx:id="colPax"    text="ТУРИСТІВ" prefWidth="80"/>
+          <TableColumn fx:id="colDates"  text="ДАТИ"     prefWidth="140"/>
+          <TableColumn fx:id="colCost"   text="ВАРТІСТЬ" prefWidth="120"/>
+          <TableColumn fx:id="colStatus" text="СТАТУС"   prefWidth="130"/>
+        </columns>
+      </TableView>
+      <HBox fx:id="adminActionBar" spacing="10"
+        style="-fx-padding:12 22 14 22;" alignment="CENTER_LEFT">
+        <Button fx:id="btnConfirm"  text="Підтвердити" styleClass="add-btn"
+          onAction="#onConfirmBooking"/>
+        <Button fx:id="btnComplete" text="Завершити"   styleClass="add-btn"
+          onAction="#onCompleteBooking"
+          style="-fx-background-color:#3a5a1a;"/>
+        <Button fx:id="btnCancel"   text="Скасувати"   styleClass="btn-danger"
+          onAction="#onCancelBooking"/>
+      </HBox>
+    </VBox>
+
+    <!-- CLIENT VIEW: картки бронювань -->
+    <VBox fx:id="clientView" spacing="12" visible="false" managed="false">
+
+      <!-- Порожній стан -->
+      <VBox fx:id="emptyState" alignment="CENTER" spacing="16" visible="false" managed="false"
+        style="-fx-padding:60 0; -fx-background-color:white; -fx-background-radius:16;
+               -fx-border-color:#e8f0e0; -fx-border-radius:16; -fx-border-width:2;
+               -fx-effect:dropshadow(gaussian,rgba(0,0,0,0.05),10,0,0,2);">
+        <Label text="✈" style="-fx-font-size:48px;"/>
+        <Label text="У вас ще немає бронювань"
+          style="-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#2d4a1a;"/>
+        <Label text="Оберіть тур з каталогу і відправляйтесь у подорож!"
+          style="-fx-font-size:13px; -fx-text-fill:#6a8a5a;"/>
+        <Button text="→ Перейти до каталогу" styleClass="add-btn"
+          onAction="#onGoToCatalog"/>
+      </VBox>
+
+      <!-- Список карток — заповнюється програмно через BookingsController -->
+      <VBox fx:id="clientCardsContainer" spacing="12"/>
+
+    </VBox>
+
+  </VBox>
+</ScrollPane>

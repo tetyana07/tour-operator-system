@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<StackPane fx:id="overlay" styleClass="modal-overlay-pane"
+  xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.TourDetailController">
+
+  <VBox styleClass="tour-detail-modal" maxWidth="640" maxHeight="700">
+
+    <!-- HERO -->
+    <StackPane fx:id="heroPane" styleClass="tour-detail-hero"
+      style="-fx-background-radius:28 28 0 0;">
+      <Region styleClass="tour-detail-hero-overlay"/>
+      <!-- Кнопка закрити -->
+      <Label fx:id="closeBtn" text="✕" styleClass="tour-modal-close-btn"
+        StackPane.alignment="TOP_RIGHT" onMouseClicked="#onClose">
+        <StackPane.margin><Insets top="14" right="14"/></StackPane.margin>
+      </Label>
+      <HBox StackPane.alignment="BOTTOM_LEFT" alignment="BOTTOM_LEFT" spacing="0">
+        <StackPane.margin><Insets bottom="18" left="22" right="22"/></StackPane.margin>
+        <VBox HBox.hgrow="ALWAYS" spacing="3">
+          <Label fx:id="heroCountry" styleClass="tour-detail-country"/>
+          <Label fx:id="heroName"    styleClass="tour-detail-name"/>
+        </VBox>
+        <Label fx:id="heroPrice" styleClass="tour-detail-price-badge"/>
+      </HBox>
+    </StackPane>
+
+    <!-- BODY -->
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="content-scroll">
+      <VBox spacing="20" style="-fx-padding:22;">
+
+        <!-- Деталі туру -->
+        <Label text="ДЕТАЛІ ТУРУ" styleClass="tour-detail-section-title"/>
+        <FlowPane hgap="8" vgap="8">
+          <VBox fx:id="chipDatesBox" styleClass="tour-chip" spacing="1">
+            <Label text="Дати" styleClass="tour-chip-key"/>
+            <Label fx:id="chipDates" styleClass="tour-chip-val"/>
+          </VBox>
+          <VBox fx:id="chipDurationBox" styleClass="tour-chip" spacing="1">
+            <Label text="Тривалість" styleClass="tour-chip-key"/>
+            <Label fx:id="chipDuration" styleClass="tour-chip-val"/>
+          </VBox>
+          <VBox fx:id="chipDepartBox" styleClass="tour-chip" spacing="1">
+            <Label text="Відліт" styleClass="tour-chip-key"/>
+            <Label fx:id="chipDepart" styleClass="tour-chip-val"/>
+          </VBox>
+          <VBox fx:id="chipHotelBox" styleClass="tour-chip" spacing="1">
+            <Label text="Готель" styleClass="tour-chip-key"/>
+            <Label fx:id="chipHotel" styleClass="tour-chip-val"/>
+          </VBox>
+          <VBox fx:id="chipFoodBox" styleClass="tour-chip" spacing="1">
+            <Label text="Харчування" styleClass="tour-chip-key"/>
+            <Label fx:id="chipFood" styleClass="tour-chip-val"/>
+          </VBox>
+          <VBox fx:id="chipInsuranceBox" styleClass="tour-chip" spacing="1">
+            <Label text="Страховка" styleClass="tour-chip-key"/>
+            <Label fx:id="chipInsurance" styleClass="tour-chip-val"/>
+          </VBox>
+        </FlowPane>
+
+        <!-- Погода — wrapper потрібен контролеру для фонового зображення -->
+        <Label text="ПОГОДА В МІСЦІ ПРИЗНАЧЕННЯ" styleClass="tour-detail-section-title"/>
+        <StackPane fx:id="weatherCardWrapper" styleClass="weather-card-wrapper">
+          <VBox fx:id="weatherCard" styleClass="weather-big-card" spacing="0">
+            <!-- Верхня частина: іконка + температура + опис -->
+            <HBox alignment="CENTER_LEFT" spacing="18" style="-fx-padding: 20 22 14 22;">
+              <Label fx:id="weatherIcon" visible="false" managed="false"/>
+              <VBox HBox.hgrow="ALWAYS" spacing="4">
+                <Label fx:id="weatherTemp" styleClass="weather-big-temp"/>
+                <Label fx:id="weatherDesc" styleClass="weather-big-desc"/>
+                <Label fx:id="weatherCity" styleClass="weather-big-city"/>
+              </VBox>
+            </HBox>
+            <!-- Розділювач -->
+            <Region styleClass="weather-divider"/>
+            <!-- Нижня частина: три показники -->
+            <HBox alignment="CENTER" style="-fx-padding: 12 22 16 22;">
+              <VBox alignment="CENTER" spacing="3" HBox.hgrow="ALWAYS">
+                <Label fx:id="weatherHumidity" styleClass="weather-stat-val"/>
+                <Label text="Вологість" styleClass="weather-stat-key"/>
+              </VBox>
+              <Region styleClass="weather-stat-divider"/>
+              <VBox alignment="CENTER" spacing="3" HBox.hgrow="ALWAYS">
+                <Label fx:id="weatherWind" styleClass="weather-stat-val"/>
+                <Label text="Вітер" styleClass="weather-stat-key"/>
+              </VBox>
+              <Region styleClass="weather-stat-divider"/>
+              <VBox alignment="CENTER" spacing="3" HBox.hgrow="ALWAYS">
+                <Label fx:id="weatherFeels" styleClass="weather-stat-val"/>
+                <Label text="Відчувається" styleClass="weather-stat-key"/>
+              </VBox>
+            </HBox>
+          </VBox>
+        </StackPane>
+
+        <!-- Квота -->
+        <Label text="КВОТА МІСЦЬ" styleClass="tour-detail-section-title"/>
+        <VBox styleClass="tour-modal-quota-box" spacing="10">
+          <HBox>
+            <Label text="Заброньовано" styleClass="td-normal" HBox.hgrow="ALWAYS"/>
+            <Label fx:id="quotaLabel" styleClass="tour-price-lbl"/>
+          </HBox>
+          <ProgressBar fx:id="quotaBar" maxWidth="Infinity" styleClass="quota-bar" prefHeight="8"/>
+        </VBox>
+
+        <!-- Що включено -->
+        <Label text="ЩО ВКЛЮЧЕНО" styleClass="tour-detail-section-title"/>
+        <FlowPane fx:id="includedFlow" hgap="8" vgap="8"/>
+
+      </VBox>
+    </ScrollPane>
+
+    <!-- FOOTER -->
+    <HBox styleClass="tour-detail-footer" alignment="CENTER_RIGHT" spacing="10">
+      <Button fx:id="cancelTourBtn"  text="Скасувати тур" styleClass="btn-danger" onAction="#onCancelTour"/>
+      <Button fx:id="archiveTourBtn" text="Архівувати"    styleClass="btn-ghost"  onAction="#onArchiveTour"/>
+      <Button fx:id="bookBtn"        text="+ Забронювати" styleClass="add-btn"    onAction="#onBook"/>
+    </HBox>
+
+  </VBox>
+</StackPane>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.*?>
+<Pane fx:id="rootPane"
+  xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.SplashController"
+  minWidth="700" minHeight="500"
+  styleClass="splash-root">
+
+  <Pane styleClass="splash-blob-1" prefWidth="500" prefHeight="500" layoutX="420" layoutY="-150"/>
+  <Pane styleClass="splash-blob-2" prefWidth="400" prefHeight="400" layoutX="-80" layoutY="300"/>
+  <Pane styleClass="splash-blob-3" prefWidth="280" prefHeight="280" layoutX="150" layoutY="200"/>
+  <Pane styleClass="splash-grid"   prefWidth="900" prefHeight="620"/>
+  <Pane fx:id="particlesPane" prefWidth="900" prefHeight="620"/>
+
+  <Pane styleClass="splash-corner-tl" layoutX="24" layoutY="24"  prefWidth="80" prefHeight="80"/>
+  <Pane styleClass="splash-corner-tr" layoutX="796" layoutY="24" prefWidth="80" prefHeight="80"/>
+  <Pane styleClass="splash-corner-bl" layoutX="24" layoutY="516" prefWidth="80" prefHeight="80"/>
+  <Pane styleClass="splash-corner-br" layoutX="796" layoutY="516" prefWidth="80" prefHeight="80"/>
+
+  <VBox alignment="CENTER" spacing="0"
+    layoutX="0" layoutY="0" prefWidth="900" prefHeight="620">
+
+    <!-- Іконка -->
+    <StackPane prefWidth="80" prefHeight="80" maxWidth="80" maxHeight="80"
+      VBox.vgrow="NEVER">
+      <Pane styleClass="splash-logo-icon" prefWidth="80" prefHeight="80"
+        maxWidth="80" maxHeight="80">
+        <Pane styleClass="splash-leaf" prefWidth="36" prefHeight="44"
+          layoutX="22" layoutY="18"/>
+      </Pane>
+    </StackPane>
+
+    <!-- Назва AYVO -->
+    <Label styleClass="splash-wordmark" text="AYVO">
+      <VBox.margin><Insets top="16"/></VBox.margin>
+    </Label>
+
+    <!-- Підзаголовок -->
+    <Label styleClass="splash-tagline" text="ВАШ СВІТ ПОДОРОЖЕЙ">
+      <VBox.margin><Insets top="10"/></VBox.margin>
+    </Label>
+
+    <!-- Прогрес -->
+    <VBox alignment="CENTER" spacing="8">
+      <VBox.margin><Insets top="48"/></VBox.margin>
+      <Label fx:id="loadingLabel" styleClass="splash-progress-label"
+        text="ЗАВАНТАЖЕННЯ" alignment="CENTER"/>
+      <Pane fx:id="progressTrack" styleClass="splash-progress-track" prefWidth="320" prefHeight="3">
+        <Pane fx:id="progressFill" styleClass="splash-progress-fill"
+          prefHeight="3" prefWidth="0"/>
+      </Pane>
+    </VBox>
+
+  </VBox>
+</Pane>

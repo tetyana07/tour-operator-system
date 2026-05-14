@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<ScrollPane styleClass="content-scroll" fitToWidth="true" xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.PromosController">
+  <VBox styleClass="content-area" spacing="22">
+
+    <HBox alignment="CENTER_LEFT">
+      <VBox HBox.hgrow="ALWAYS" spacing="3">
+        <Label text="Промокоди" styleClass="page-title"/>
+        <Label text="Управління акціями та системою знижок" styleClass="page-sub"/>
+      </VBox>
+    </HBox>
+
+    <FlowPane fx:id="promosContainer" hgap="14" vgap="14"/>
+  </VBox>
+</ScrollPane>

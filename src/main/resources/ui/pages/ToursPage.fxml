@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<ScrollPane styleClass="content-scroll" fitToWidth="true"
+  xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.ToursController">
+  <VBox styleClass="content-area" spacing="20">
+
+    <!-- PAGE HEADER -->
+    <HBox alignment="CENTER_LEFT">
+      <VBox HBox.hgrow="ALWAYS" spacing="3">
+        <Label text="Каталог турів" styleClass="page-title"/>
+        <Label fx:id="tourCountLabel" text="Завантаження..." styleClass="page-sub"/>
+      </VBox>
+      <Button fx:id="newTourBtn" text="+ Новий тур" styleClass="add-btn" onAction="#onNewTour"/>
+    </HBox>
+
+    <!-- FILTER TABS -->
+    <HBox spacing="8">
+      <Button fx:id="tabActive"    text="Активні"    styleClass="tab-btn-active"   onAction="#onShowActive"/>
+      <Button fx:id="tabArchived"  text="Архів"      styleClass="tab-btn-inactive" onAction="#onShowArchived"
+        visible="false" managed="false"/>
+      <Button fx:id="tabCancelled" text="Скасовані"  styleClass="tab-btn-inactive" onAction="#onShowCancelled"
+        visible="false" managed="false"/>
+    </HBox>
+
+    <!-- TOUR CARDS GRID — заповнюється програмно в ToursController -->
+    <GridPane fx:id="toursGrid" hgap="16" vgap="16" maxWidth="Infinity" VBox.vgrow="NEVER">
+      <columnConstraints>
+        <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" minWidth="200"/>
+        <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" minWidth="200"/>
+        <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" minWidth="200"/>
+      </columnConstraints>
+    </GridPane>
+
+  </VBox>
+</ScrollPane>

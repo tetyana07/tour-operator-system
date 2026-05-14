@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.shape.Rectangle?>
+<StackPane fx:id="overlay" styleClass="modal-overlay-pane"
+  xmlns:fx="http://javafx.com/fxml"
+  fx:controller="com.touroperator.ui.NewTourController">
+
+  <VBox styleClass="tour-detail-modal" maxWidth="580" maxHeight="700"
+    style="-fx-effect: dropshadow(gaussian, rgba(13,32,16,0.28), 48, 0, 0, 12);">
+
+    <!-- HEADER -->
+    <HBox alignment="CENTER_LEFT" spacing="14"
+      style="-fx-background-color:#173404; -fx-padding:20 24 20 24;
+                 -fx-background-radius:24 24 0 0;">
+      <VBox spacing="3" HBox.hgrow="ALWAYS">
+        <Label text="НОВИЙ ТУР"
+          style="-fx-font-family:'Syne'; -fx-font-size:11px; -fx-font-weight:bold;
+                      -fx-text-fill:#8fcba3; -fx-letter-spacing:1.2;"/>
+        <Label text="Заповніть деталі туру"
+          style="-fx-font-family:'Syne'; -fx-font-size:18px; -fx-font-weight:bold;
+                      -fx-text-fill:white;"/>
+      </VBox>
+      <Label text="✕" styleClass="tour-modal-close-btn"
+        onMouseClicked="#onCancel"/>
+    </HBox>
+
+    <!-- BODY -->
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="content-scroll"
+      style="-fx-background-color:white;">
+      <VBox spacing="14" style="-fx-padding:22 24 8 24; -fx-background-color:white;">
+
+        <!-- Назва -->
+        <VBox spacing="5">
+          <Label text="НАЗВА ТУРУ" styleClass="tour-detail-section-title"/>
+          <TextField fx:id="nameField" promptText="Наприклад: Романтичний Париж"
+            styleClass="voya-input"/>
+        </VBox>
+
+        <!-- Країна / Місто -->
+        <HBox spacing="12">
+          <VBox spacing="5" HBox.hgrow="ALWAYS">
+            <Label text="КРАЇНА" styleClass="tour-detail-section-title"/>
+            <TextField fx:id="countryField" promptText="Франція" styleClass="voya-input"/>
+          </VBox>
+          <VBox spacing="5" HBox.hgrow="ALWAYS">
+            <Label text="МІСТО" styleClass="tour-detail-section-title"/>
+            <TextField fx:id="cityField" promptText="Париж" styleClass="voya-input"/>
+          </VBox>
+        </HBox>
+
+        <!-- Дати -->
+        <HBox spacing="12">
+          <VBox spacing="5" HBox.hgrow="ALWAYS">
+            <Label text="ДАТА ПОЧАТКУ" styleClass="tour-detail-section-title"/>
+            <DatePicker fx:id="startDatePicker" maxWidth="Infinity" styleClass="voya-input"/>
+          </VBox>
+          <VBox spacing="5" HBox.hgrow="ALWAYS">
+            <Label text="ДАТА ЗАВЕРШЕННЯ" styleClass="tour-detail-section-title"/>
+            <DatePicker fx:id="endDatePicker" maxWidth="Infinity" styleClass="voya-input"/>
+          </VBox>
+        </HBox>
+
+        <!-- Ціна / Квота -->
+        <HBox spacing="12">
+          <VBox spacing="5" HBox.hgrow="ALWAYS">
+            <Label text="ЦІНА (&#8372;)" styleClass="tour-detail-section-title"/>
+            <TextField fx:id="priceField" promptText="34 800" styleClass="voya-input"/>
+          </VBox>
+          <VBox spacing="5">
+            <Label text="МІСЦЬ (КВОТА)" styleClass="tour-detail-section-title"/>
+            <Spinner fx:id="quotaSpinner" prefWidth="120" styleClass="voya-input"/>
+          </VBox>
+        </HBox>
+
+        <!-- Відліт -->
+        <VBox spacing="5">
+          <Label text="ВІДЛІТ (місто / аеропорт)" styleClass="tour-detail-section-title"/>
+          <TextField fx:id="departureField" promptText="Наприклад: Київ (KBP)" styleClass="voya-input"/>
+        </VBox>
+
+        <!-- Готель -->
+        <VBox spacing="5">
+          <Label text="ГОТЕЛЬ" styleClass="tour-detail-section-title"/>
+          <ComboBox fx:id="hotelCombo" maxWidth="Infinity" styleClass="voya-input"/>
+        </VBox>
+
+        <!-- Харчування -->
+        <VBox spacing="5">
+          <Label text="ХАРЧУВАННЯ" styleClass="tour-detail-section-title"/>
+          <ComboBox fx:id="mealCombo" maxWidth="Infinity" styleClass="voya-input"
+            promptText="Не включено"/>
+        </VBox>
+
+        <!-- Що включено — чекбокси -->
+        <VBox spacing="10">
+          <Label text="ЩО ВКЛЮЧЕНО" styleClass="tour-detail-section-title"/>
+          <HBox spacing="20" style="-fx-padding:4 0 0 2;">
+            <CheckBox fx:id="checkFlight"    text="Авіаперельот"/>
+            <CheckBox fx:id="checkTransfer"  text="Трансфер"/>
+            <CheckBox fx:id="checkInsurance" text="Страхування"/>
+            <CheckBox fx:id="checkGuide"     text="Гід"/>
+          </HBox>
+        </VBox>
+
+        <!-- Фото -->
+        <VBox spacing="5">
+          <Label text="ФОТО ТУРУ" styleClass="tour-detail-section-title"/>
+          <StackPane fx:id="photoPane" styleClass="photo-upload-pane"
+            prefHeight="80" onMouseClicked="#onChoosePhoto">
+            <ImageView fx:id="photoPreview" fitWidth="530" fitHeight="78"
+              preserveRatio="true" smooth="true"
+              visible="false" managed="false"/>
+            <Label fx:id="photoHintLabel"
+              text="＋  Натисніть щоб обрати фото"
+              style="-fx-text-fill:#639922; -fx-font-size:13px;"/>
+          </StackPane>
+        </VBox>
+
+        <!-- Помилка -->
+        <Label fx:id="statusLabel" styleClass="error-label"
+          visible="false" managed="false" wrapText="true"/>
+
+        <!-- Відступ знизу -->
+        <Region prefHeight="6"/>
+
+      </VBox>
+    </ScrollPane>
+
+    <!-- FOOTER -->
+    <HBox styleClass="tour-detail-footer" alignment="CENTER_RIGHT" spacing="10">
+      <Button text="Скасувати" styleClass="btn-ghost" onAction="#onCancel"/>
+      <Button text="+ Додати тур" styleClass="add-btn" onAction="#onSave"/>
+    </HBox>
+
+  </VBox>
+</StackPane>

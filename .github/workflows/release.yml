@@ -1,0 +1,181 @@
+name: Release — Build Installers
+
+# Запускається при пуші тегу виду v1.0.0, v1.2.3 тощо
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 1: Збірка нативних інсталяторів для трьох платформ паралельно
+  # ─────────────────────────────────────────────────────────────────
+  build-installers:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # 1. Клонування репозиторію
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Встановлення JDK 21 (відповідає версії в pom.xml)
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # 3. WiX Toolset v3 — потрібен лише на Windows для генерації .msi
+      #    ВАЖЛИВО: jpackage підтримує тільки WiX 3.x (не 4.x або 5.x)
+      - name: Install WiX Toolset v3 (Windows only)
+        if: matrix.os == 'windows-latest'
+        run: choco install wixtoolset --yes
+        shell: cmd
+
+      # 4. Інструменти RPM — потрібні лише на Linux для генерації .rpm
+      - name: Install RPM tools (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y rpm
+
+      # 5. Збірка Fat JAR (maven-shade-plugin запускається разом з package)
+      - name: Build Fat JAR
+        run: mvn clean package -DskipTests
+
+      # 6. Підготовка директорії для jpackage
+      - name: Prepare jpackage input directory
+        run: |
+          mkdir -p jpackage-input
+          cp target/tour-operator-system-fat.jar jpackage-input/
+
+      # 7. Витягуємо версію з git-тегу: v1.0.0 → 1.0.0
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      # ── WINDOWS: генерація .msi інсталятора ──────────────────────
+      - name: Package .msi installer (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          jpackage `
+            --type msi `
+            --name "Tour Operator System" `
+            --app-version "${{ steps.version.outputs.VERSION }}" `
+            --vendor "TourOperator" `
+            --description "Tour Operator Management System" `
+            --input jpackage-input/ `
+            --main-jar tour-operator-system-fat.jar `
+            --main-class com.touroperator.ui.Launcher `
+            --dest dist/ `
+            --win-dir-chooser `
+            --win-menu `
+            --win-shortcut `
+            --win-menu-group "TourOperator"
+
+      # ── macOS: генерація .dmg образу ─────────────────────────────
+      - name: Package .dmg installer (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          jpackage \
+            --type dmg \
+            --name "Tour Operator System" \
+            --app-version "${{ steps.version.outputs.VERSION }}" \
+            --vendor "TourOperator" \
+            --description "Tour Operator Management System" \
+            --input jpackage-input/ \
+            --main-jar tour-operator-system-fat.jar \
+            --main-class com.touroperator.ui.Launcher \
+            --dest dist/ \
+            --mac-package-name "tour-operator-system" \
+            --mac-package-identifier "com.touroperator.ui"
+
+      # ── LINUX: генерація .deb (Ubuntu/Debian) та .rpm (RedHat/Fedora)
+      - name: Package .deb and .rpm installers (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          # DEB — для Debian/Ubuntu
+          jpackage \
+            --type deb \
+            --name "tour-operator-system" \
+            --app-version "${{ steps.version.outputs.VERSION }}" \
+            --vendor "TourOperator" \
+            --description "Tour Operator Management System" \
+            --input jpackage-input/ \
+            --main-jar tour-operator-system-fat.jar \
+            --main-class com.touroperator.ui.Launcher \
+            --dest dist/ \
+            --linux-package-name "tour-operator-system" \
+            --linux-app-category "Office" \
+            --linux-shortcut
+
+          # RPM — для RedHat/Fedora/CentOS
+          jpackage \
+            --type rpm \
+            --name "tour-operator-system" \
+            --app-version "${{ steps.version.outputs.VERSION }}" \
+            --vendor "TourOperator" \
+            --description "Tour Operator Management System" \
+            --input jpackage-input/ \
+            --main-jar tour-operator-system-fat.jar \
+            --main-class com.touroperator.ui.Launcher \
+            --dest dist/ \
+            --linux-package-name "tour-operator-system" \
+            --linux-app-category "Office" \
+            --linux-shortcut
+
+          # Копіюємо Fat JAR у dist/ — щоб він теж потрапив у реліз
+          cp target/tour-operator-system-fat.jar dist/
+
+      # 8. Завантажуємо артефакти для наступного job-у
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.os }}
+          path: dist/
+          retention-days: 1
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 2: Публікація GitHub Release з усіма інсталяторами
+  # ─────────────────────────────────────────────────────────────────
+  publish-release:
+    needs: build-installers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: installers/
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Tour Operator System ${{ github.ref_name }}"
+          body: |
+            ## Tour Operator System ${{ github.ref_name }}
+
+            ### Завантаження
+
+            | Платформа | Файл | Примітки |
+            |---|---|---|
+            | Windows 10/11 | `*.msi` | Стандартний інсталятор із майстром встановлення |
+            | macOS 12+ | `*.dmg` | Образ диска, перетягніть у Applications |
+            | Ubuntu/Debian | `*.deb` | `sudo dpkg -i *.deb` |
+            | RedHat/Fedora | `*.rpm` | `sudo rpm -i *.rpm` |
+            | Будь-яка ОС (потрібна JRE 21+) | `*.jar` | `java -jar tour-operator-system-fat.jar` |
+
+          files: installers/**
+          draft: false
+          prerelease: false
