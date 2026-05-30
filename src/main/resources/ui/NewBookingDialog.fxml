@@ -10,7 +10,7 @@
   <VBox styleClass="tour-detail-modal" maxWidth="580" maxHeight="820"
     style="-fx-background-color:#f8faf6; -fx-background-radius:24; -fx-effect:dropshadow(gaussian,rgba(0,0,0,0.28),40,0,0,8);">
 
-    <!-- HEADER — зелений градієнт -->
+    <!-- HEADER -->
     <HBox style="-fx-background-color:linear-gradient(to bottom right, #1a3d08, #2d6b1a);
                  -fx-background-radius:24 24 0 0; -fx-padding:20 24 16 28;"
       alignment="CENTER_LEFT">
@@ -33,7 +33,7 @@
       style="-fx-background:transparent; -fx-background-color:transparent;">
       <VBox spacing="0" style="-fx-padding:0; -fx-background-color:#f8faf6;">
 
-        <!-- Секція: ТУР (прихована для клієнта якщо тур вже обрано) -->
+        <!-- ТУР -->
         <VBox fx:id="tourSection" style="-fx-padding:20 28 0 28;" spacing="6">
           <Label text="ТУР" style="-fx-font-size:10px; -fx-font-weight:bold;
                  -fx-text-fill:#5a8a3a; -fx-letter-spacing:1.5;"/>
@@ -43,7 +43,7 @@
                    -fx-border-radius:10; -fx-background-radius:10; -fx-font-size:13px;"/>
         </VBox>
 
-        <!-- Секція вибору клієнта — видима тільки для адміна -->
+        <!-- КЛІЄНТ -->
         <VBox fx:id="clientSection" visible="false" managed="false" style="-fx-padding:0 28;" spacing="6">
           <Label text="КЛІЄНТ" style="-fx-font-size:10px; -fx-font-weight:bold;
                  -fx-text-fill:#5a8a3a; -fx-letter-spacing:1.5;"/>
@@ -55,13 +55,11 @@
             startX="0" endX="524" translateY="0"/>
         </VBox>
 
-        <!-- Divider -->
         <Region prefHeight="16"/>
-        <Line style="-fx-stroke:#e8f0e0; -fx-stroke-width:1;"
-          startX="28" endX="552" translateY="0"/>
+        <Line style="-fx-stroke:#e8f0e0; -fx-stroke-width:1;" startX="28" endX="552" translateY="0"/>
         <Region prefHeight="16"/>
 
-        <!-- Секція: ТУРИСТИ -->
+        <!-- ТУРИСТИ -->
         <VBox style="-fx-padding:0 28;" spacing="10">
           <Label text="ТУРИСТИ" style="-fx-font-size:10px; -fx-font-weight:bold;
                  -fx-text-fill:#5a8a3a; -fx-letter-spacing:1.5;"/>
@@ -78,7 +76,7 @@
                        -fx-border-radius:10; -fx-background-radius:10;"/>
             </VBox>
             <VBox spacing="5" GridPane.columnIndex="1">
-              <Label text="Дітей (знижка 50%)"
+              <Label text="Дітей (знижка −30% на дитину)"
                 style="-fx-font-size:12px; -fx-text-fill:#6a7a5a;"/>
               <Spinner fx:id="childSpinner" maxWidth="Infinity"
                 style="-fx-background-color:white; -fx-border-color:#d4e8c2;
@@ -88,17 +86,15 @@
         </VBox>
 
         <Region prefHeight="16"/>
-        <Line style="-fx-stroke:#e8f0e0; -fx-stroke-width:1;"
-          startX="28" endX="552" translateY="0"/>
+        <Line style="-fx-stroke:#e8f0e0; -fx-stroke-width:1;" startX="28" endX="552" translateY="0"/>
         <Region prefHeight="16"/>
 
-        <!-- Секція: ПРОЖИВАННЯ та ЕКСКУРСІЯ -->
+        <!-- ДОДАТКОВО -->
         <VBox style="-fx-padding:0 28;" spacing="10">
           <Label text="ДОДАТКОВО" style="-fx-font-size:10px; -fx-font-weight:bold;
                  -fx-text-fill:#5a8a3a; -fx-letter-spacing:1.5;"/>
           <VBox spacing="5">
-            <Label text="Готель"
-              style="-fx-font-size:12px; -fx-text-fill:#6a7a5a;"/>
+            <Label text="Готель" style="-fx-font-size:12px; -fx-text-fill:#6a7a5a;"/>
             <ComboBox fx:id="hotelCombo" maxWidth="Infinity"
               style="-fx-background-color:white; -fx-border-color:#d4e8c2;
                      -fx-border-radius:10; -fx-background-radius:10; -fx-font-size:13px;"/>
@@ -117,15 +113,13 @@
               <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
             </columnConstraints>
             <VBox spacing="5" GridPane.columnIndex="0">
-              <Label text="Трансфер"
-                style="-fx-font-size:12px; -fx-text-fill:#6a7a5a;"/>
+              <Label text="Трансфер" style="-fx-font-size:12px; -fx-text-fill:#6a7a5a;"/>
               <ComboBox fx:id="transferCombo" maxWidth="Infinity"
                 style="-fx-background-color:white; -fx-border-color:#d4e8c2;
                        -fx-border-radius:10; -fx-background-radius:10; -fx-font-size:13px;"/>
             </VBox>
             <VBox spacing="5" GridPane.columnIndex="1">
-              <Label text="Страховка"
-                style="-fx-font-size:12px; -fx-text-fill:#6a7a5a;"/>
+              <Label text="Страховка" style="-fx-font-size:12px; -fx-text-fill:#6a7a5a;"/>
               <ComboBox fx:id="insuranceCombo" maxWidth="Infinity"
                 style="-fx-background-color:white; -fx-border-color:#d4e8c2;
                        -fx-border-radius:10; -fx-background-radius:10; -fx-font-size:13px;"/>
@@ -134,22 +128,40 @@
         </VBox>
 
         <Region prefHeight="16"/>
-        <Line style="-fx-stroke:#e8f0e0; -fx-stroke-width:1;"
-          startX="28" endX="552" translateY="0"/>
+        <Line style="-fx-stroke:#e8f0e0; -fx-stroke-width:1;" startX="28" endX="552" translateY="0"/>
         <Region prefHeight="16"/>
 
-        <!-- Секція: ЗНИЖКА -->
+        <!-- ЗНИЖКИ -->
         <VBox style="-fx-padding:0 28;" spacing="10">
-          <Label text="ЗНИЖКА" style="-fx-font-size:10px; -fx-font-weight:bold;
+          <Label text="ЗНИЖКИ" style="-fx-font-size:10px; -fx-font-weight:bold;
                  -fx-text-fill:#5a8a3a; -fx-letter-spacing:1.5;"/>
+
+          <!-- Автоматичні знижки — статус-мітки -->
+          <Label text="Застосовуються автоматично:"
+            style="-fx-font-size:11px; -fx-text-fill:#8a9a7a;"/>
+          <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label fx:id="badgeEarly" text="⏰ Раннє бронювання −10%"
+              style="-fx-background-color:#e8f5e0; -fx-background-radius:20;
+                     -fx-border-color:#b0d890; -fx-border-radius:20;
+                     -fx-padding:5 12; -fx-font-size:11px; -fx-text-fill:#4a7a2a;"/>
+            <Label fx:id="badgeChild" text="👶 Дитяча знижка −30%"
+              style="-fx-background-color:#e8f5e0; -fx-background-radius:20;
+                     -fx-border-color:#b0d890; -fx-border-radius:20;
+                     -fx-padding:5 12; -fx-font-size:11px; -fx-text-fill:#4a7a2a;"/>
+            <Label fx:id="badgeGroup" text="👥 Групова −7%"
+              style="-fx-background-color:#e8f5e0; -fx-background-radius:20;
+                     -fx-border-color:#b0d890; -fx-border-radius:20;
+                     -fx-padding:5 12; -fx-font-size:11px; -fx-text-fill:#4a7a2a;"/>
+          </HBox>
+
+          <!-- Ручна знижка + промокод -->
           <GridPane hgap="14">
             <columnConstraints>
               <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
               <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
             </columnConstraints>
             <VBox spacing="5" GridPane.columnIndex="0">
-              <Label text="Промокод"
-                style="-fx-font-size:12px; -fx-text-fill:#6a7a5a;"/>
+              <Label text="Промокод" style="-fx-font-size:12px; -fx-text-fill:#6a7a5a;"/>
               <TextField fx:id="promoField" promptText="Наприклад: SUMMER25"
                 onAction="#onPromoApply"
                 style="-fx-background-color:white; -fx-border-color:#d4e8c2;
@@ -157,7 +169,7 @@
                        -fx-padding:8 12; -fx-font-size:13px;"/>
             </VBox>
             <VBox spacing="5" GridPane.columnIndex="1">
-              <Label text="Тип знижки"
+              <Label text="Спеціальна знижка"
                 style="-fx-font-size:12px; -fx-text-fill:#6a7a5a;"/>
               <ComboBox fx:id="discountCombo" maxWidth="Infinity"
                 onAction="#onDiscountChanged"
@@ -169,15 +181,13 @@
 
         <Region prefHeight="20"/>
 
-        <!-- ПІДСУМОК — зелена картка -->
+        <!-- ПІДСУМОК -->
         <VBox style="-fx-margin:0 28; -fx-padding:20 28;" spacing="0">
           <VBox style="-fx-background-color:linear-gradient(to bottom right,#1a3d08,#2d6b1a);
                        -fx-background-radius:16; -fx-padding:20;" spacing="10">
             <Label text="ПІДСУМОК ВАРТОСТІ"
               style="-fx-font-size:10px; -fx-font-weight:bold;
                      -fx-text-fill:#8fcba3; -fx-letter-spacing:1.5;"/>
-
-            <!-- Базова ціна -->
             <HBox alignment="CENTER_LEFT">
               <Label fx:id="baseLine" text="Базова вартість"
                 style="-fx-font-size:13px; -fx-text-fill:rgba(255,255,255,0.7);"
@@ -185,8 +195,6 @@
               <Label fx:id="basePrice" text="0 грн"
                 style="-fx-font-size:13px; -fx-text-fill:rgba(255,255,255,0.7);"/>
             </HBox>
-
-            <!-- Знижка -->
             <HBox alignment="CENTER_LEFT">
               <Label text="Знижка"
                 style="-fx-font-size:13px; -fx-text-fill:#8fcba3;"
@@ -194,12 +202,7 @@
               <Label fx:id="discountLine" text="− 0 грн"
                 style="-fx-font-size:13px; -fx-text-fill:#8fcba3;"/>
             </HBox>
-
-            <!-- Роздільник -->
-            <Region prefHeight="1"
-              style="-fx-background-color:rgba(255,255,255,0.15);"/>
-
-            <!-- Підсумок -->
+            <Region prefHeight="1" style="-fx-background-color:rgba(255,255,255,0.15);"/>
             <HBox alignment="CENTER_LEFT">
               <Label text="До сплати"
                 style="-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:white;"

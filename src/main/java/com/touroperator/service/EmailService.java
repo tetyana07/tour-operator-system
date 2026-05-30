@@ -109,6 +109,30 @@ public class EmailService {
         sendAsync(toEmail, subject, htmlBody);
     }
 
+    /**
+     * Надсилає лист підтвердження email після реєстрації.
+     * @param toEmail   адреса нового клієнта
+     * @param clientName ім'я клієнта
+     * @param token     verify_token зі збережений в БД
+     */
+    public void sendVerificationEmail(String toEmail, String clientName, String token) {
+        String subject = "✉️ Підтвердіть вашу email-адресу — AYVO Travel";
+        String body = buildHtml(
+              "Підтвердження реєстрації",
+              clientName,
+              "Дякуємо за реєстрацію в AYVO Travel! Для активації облікового запису " +
+                    "введіть код підтвердження у програмі:",
+              "<div style=\"margin:24px 0;text-align:center;\">" +
+                    "<span style=\"display:inline-block;background:#1a1a2e;color:#e94560;" +
+                    "font-size:28px;font-weight:bold;letter-spacing:6px;padding:14px 32px;" +
+                    "border-radius:8px;font-family:monospace;\">" + token + "</span></div>" +
+                    "<p style=\"color:#718096;font-size:13px;text-align:center;\">" +
+                    "Код дійсний протягом 24 годин.</p>",
+              "Якщо ви не реєструвались — просто проігноруйте цей лист."
+        );
+        sendAsync(toEmail, subject, body);
+    }
+
 
     private void sendAsync(String toEmail, String subject, String htmlBody) {
         executor.submit(() -> {

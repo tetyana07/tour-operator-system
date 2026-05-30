@@ -82,7 +82,38 @@
           style="-fx-background-color:#3a5a1a;"/>
         <Button fx:id="btnCancel"   text="Скасувати"   styleClass="btn-danger"
           onAction="#onCancelBooking"/>
+        <!-- Spacer -->
+        <HBox HBox.hgrow="ALWAYS"/>
+        <!-- Undo / Redo -->
+        <Button fx:id="btnUndo" text="↩ Скасувати дію"
+          onAction="#onUndo" disable="true"
+          style="-fx-background-color:transparent; -fx-border-color:#b0c8a0;
+                 -fx-border-radius:8; -fx-background-radius:8;
+                 -fx-text-fill:#4a6a3a; -fx-font-size:12px; -fx-padding:5 14; -fx-cursor:hand;"/>
+        <Button fx:id="btnRedo" text="↪ Повторити"
+          onAction="#onRedo" disable="true"
+          style="-fx-background-color:transparent; -fx-border-color:#b0c8a0;
+                 -fx-border-radius:8; -fx-background-radius:8;
+                 -fx-text-fill:#4a6a3a; -fx-font-size:12px; -fx-padding:5 14; -fx-cursor:hand;"/>
       </HBox>
+
+      <!-- AUDIT PANEL — з'являється при виборі рядка в таблиці -->
+      <VBox fx:id="auditPanel" spacing="0" visible="false" managed="false"
+        style="-fx-background-color:#f8fcf4; -fx-border-color:#d0e8b8;
+               -fx-border-width:1 0 0 0; -fx-padding:0;">
+        <HBox alignment="CENTER_LEFT" spacing="10"
+          style="-fx-padding:10 22 8 22; -fx-background-color:#edf7e2;">
+          <Label text="📋" style="-fx-font-size:14px;"/>
+          <Label fx:id="auditTitle" text="Історія змін"
+            style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#1a3d08;"/>
+          <HBox HBox.hgrow="ALWAYS"/>
+          <Button text="✕" onAction="#onCloseAudit"
+            style="-fx-background-color:transparent; -fx-text-fill:#8a9a7a;
+                   -fx-font-size:13px; -fx-cursor:hand; -fx-padding:2 6;"/>
+        </HBox>
+        <VBox fx:id="auditTimeline" spacing="0"
+          style="-fx-padding:8 22 12 22; -fx-max-height:180;"/>
+      </VBox>
     </VBox>
 
     <!-- CLIENT VIEW: картки бронювань -->

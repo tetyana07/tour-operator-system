@@ -43,17 +43,7 @@
     <graphic><FontIcon iconLiteral="fas-chart-bar" iconSize="20"/></graphic>
   </Button>
 
-  <!-- Push settings to bottom -->
+  <!-- Push content to top -->
   <Region VBox.vgrow="ALWAYS"/>
-
-  <!-- Separator before settings -->
-  <Pane styleClass="sidebar-sep" maxWidth="Infinity">
-    <VBox.margin><Insets top="6" bottom="6" left="12" right="12"/></VBox.margin>
-  </Pane>
-
-  <Button fx:id="btnSettings" styleClass="nav-icon-btn"
-    onAction="#onNav" userData="settings" maxWidth="Infinity">
-    <graphic><FontIcon iconLiteral="fas-cog" iconSize="20"/></graphic>
-  </Button>
 
 </VBox>

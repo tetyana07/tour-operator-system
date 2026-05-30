@@ -23,6 +23,7 @@ public class ProfilePanelController {
     @FXML private Label       pdAvatar;
     @FXML private Label       pdFullName;
     @FXML private Label       pdRole;
+    @FXML private Label       pdLastLogin;
     @FXML private TextField   fieldFirstName;
     @FXML private TextField   fieldLastName;
     @FXML private TextField   fieldEmail;
@@ -56,6 +57,17 @@ public class ProfilePanelController {
         if (pdAvatar   != null) pdAvatar.setText(initials);
         if (pdFullName != null) pdFullName.setText(trim(firstName + " " + lastName));
         if (pdRole     != null) pdRole.setText((role != null && !role.isBlank() ? role : "Користувач") + " · AYVO");
+
+        // Реальна дата/час останнього входу
+        if (pdLastLogin != null) {
+            java.time.LocalDateTime loginTime = SessionState.getLastLoginTime();
+            if (loginTime != null) {
+                String formatted = loginTime.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy 'о' HH:mm"));
+                pdLastLogin.setText("Останній вхід: " + formatted);
+            } else {
+                pdLastLogin.setText("Перший сеанс");
+            }
+        }
 
         if (fieldFirstName != null) fieldFirstName.setText(firstName);
         if (fieldLastName  != null) fieldLastName.setText(lastName);
@@ -246,6 +258,10 @@ public class ProfilePanelController {
         private static String email     = "";
         private static String phone     = "";
         private static String roleName  = "";
+        private static java.time.LocalDateTime lastLoginTime = null;
+
+        public static java.time.LocalDateTime getLastLoginTime()             { return lastLoginTime; }
+        public static void   setLastLoginTime(java.time.LocalDateTime t)     { lastLoginTime = t; }
 
         /** Слухачі, що спрацьовують після збереження профілю (ім'я/аватарка) */
         private static final java.util.List<java.util.function.Consumer<String>> profileListeners =

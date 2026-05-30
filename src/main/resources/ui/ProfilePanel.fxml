@@ -14,7 +14,7 @@
       <VBox spacing="3">
         <Label fx:id="pdFullName" text="" styleClass="pd-name"/>
         <Label fx:id="pdRole"     text="" styleClass="pd-role"/>
-        <Label text="У системі з лютого 2024" styleClass="pd-since"/>
+        <Label fx:id="pdLastLogin" text="Останній вхід..." styleClass="pd-since"/>
       </VBox>
     </HBox>
     <!-- форма -->

@@ -58,6 +58,7 @@ public class WeatherRepository {
             WeatherForecast wf = jdbc.queryForObject("""
                     SELECT * FROM weather_forecasts
                     WHERE LOWER(city) = LOWER(?)
+                      AND fetched_at > NOW() - INTERVAL '24 hours'
                     ORDER BY fetched_at DESC
                     LIMIT 1
                     """,
@@ -66,6 +67,11 @@ public class WeatherRepository {
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
+    }
+
+    /** Видаляє записи старіші за 24 години */
+    public void deleteStale() {
+        jdbc.update("DELETE FROM weather_forecasts WHERE fetched_at < NOW() - INTERVAL '24 hours'");
     }
 
 

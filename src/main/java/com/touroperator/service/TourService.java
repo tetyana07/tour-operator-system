@@ -19,7 +19,6 @@ public class TourService {
         this.tourRepo = tourRepo;
     }
 
-
     public Tour createTour(Tour tour) {
         if (tour.getStartDate() == null || tour.getEndDate() == null)
             throw new IllegalArgumentException("Дати початку і завершення є обов'язковими");
@@ -49,20 +48,17 @@ public class TourService {
         return tourRepo.findAll();
     }
 
-    public List<Tour> findByStatus(com.touroperator.domain.TourStatus status) {
+    public List<Tour> findByStatus(TourStatus status) {
         return tourRepo.findByStatus(status);
     }
 
-    public List<Tour> getAllTours() {
-        return tourRepo.findAll();
-    }
-
+    /** Активні тури (статус ACTIVE) */
     public List<Tour> getActiveTours() {
         return tourRepo.findActive();
     }
 
     public Tour updateTour(Tour tour) {
-        getTourById(tour.getId());
+        getTourById(tour.getId()); // перевіряємо що тур існує
         tourRepo.update(tour);
         return tour;
     }

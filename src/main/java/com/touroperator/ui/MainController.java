@@ -17,13 +17,13 @@ public class MainController {
 
     @FXML private StackPane pageContainer;
 
-    // Контролери вкладених fx:include — JavaFX вставляє автоматично (суфікс "Controller")
+     
     @FXML private SidebarController  iconSidebarController;
     @FXML private TopBarController   topBarController;
 
     private final Map<String, Node> pageCache = new HashMap<>();
 
-    // Ці сторінки містять live-дані з БД — НЕ кешуємо, щоб завжди показувати актуально
+     
     private static final Set<String> NO_CACHE_PAGES =
           Set.of("tours", "bookings", "dashboard", "clients", "payments");
 
@@ -32,7 +32,7 @@ public class MainController {
 
     @FXML
     public void initialize() {
-        // Не завантажуємо сторінку тут — чекаємо setUser() від LoginController.
+         
     }
 
     /** Викликається LoginController одразу після loader.load(). */
@@ -40,17 +40,17 @@ public class MainController {
         this.currentEmail = email;
         this.currentRole  = role;
 
-        // Оновлюємо TopBar
+         
         if (topBarController != null) {
             topBarController.setMainController(this);
             topBarController.updateUser(formatDisplayName(email), role.name()); // role.name() = "ADMIN"/"CLIENT"
         }
 
-        // Зберігаємо реальні дані у SessionState для ProfilePanel
+         
         ProfilePanelController.SessionState.setEmail(email != null ? email : "");
-        // Завантажуємо телефон із БД (для клієнтів)
+         
         if (role == UserRole.ADMIN) {
-            // Адмін не є клієнтом у БД — заповнюємо вручну
+             
             ProfilePanelController.SessionState.setDisplayName("Адміністратор");
             ProfilePanelController.SessionState.setPhone("");
             ProfilePanelController.SessionState.setRoleName(role.getDisplayName());
@@ -60,7 +60,7 @@ public class MainController {
                       com.touroperator.config.SpringContext.getBean(
                             com.touroperator.repository.ClientRepository.class);
                 clientRepo.findByEmail(email).ifPresent(client -> {
-                    // Якщо в БД є ім'я — використовуємо його, інакше залишаємо сформоване з email
+                     
                     if (client.getName() != null && !client.getName().isBlank()) {
                         ProfilePanelController.SessionState.setDisplayName(client.getName());
                         if (topBarController != null) {
@@ -74,7 +74,7 @@ public class MainController {
             } catch (Exception ignored) {}
         }
 
-        // Приховуємо пункти меню залежно від ролі
+         
         if (iconSidebarController != null) {
             iconSidebarController.applyRole(role);
         }
@@ -86,7 +86,7 @@ public class MainController {
     public void showPage(String pageName) {
         pageContainer.getChildren().clear();
         try {
-            // Для сторінок з живими даними — завжди перезавантажуємо з БД
+             
             boolean skipCache = NO_CACHE_PAGES.contains(pageName);
             if (skipCache) {
                 pageCache.remove(pageName);
@@ -106,7 +106,7 @@ public class MainController {
                 if (!skipCache) {
                     pageCache.put(pageName, page);
                 } else {
-                    // Зберігаємо тимчасово для поточного відображення
+                     
                     pageCache.put(pageName, page);
                 }
             }

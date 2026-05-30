@@ -1,29 +1,20 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         http://www.w3.org/xsd/maven-4.0.0.xsd">
-
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://www.w3.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
     <version>3.5.0</version>
     <relativePath/>
   </parent>
-
   <groupId>com.touroperator</groupId>
   <artifactId>tour-operator-system</artifactId>
   <version>1.0-SNAPSHOT</version>
-
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
     <javafx.version>21</javafx.version>
   </properties>
-
   <dependencies>
-
-    <!-- JavaFX -->
+    <!--  JavaFX  -->
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-controls</artifactId>
@@ -34,15 +25,19 @@
       <artifactId>javafx-fxml</artifactId>
       <version>${javafx.version}</version>
     </dependency>
-
-    <!-- Apache POI -->
+    <!--  Apache POI  -->
     <dependency>
       <groupId>org.apache.poi</groupId>
       <artifactId>poi-ooxml</artifactId>
       <version>5.2.5</version>
     </dependency>
-
-    <!-- SLF4J -->
+    <!--  OpenPDF — PDF звіти (ліцензія LGPL/MPL)  -->
+    <dependency>
+      <groupId>com.github.librepdf</groupId>
+      <artifactId>openpdf</artifactId>
+      <version>1.3.43</version>
+    </dependency>
+    <!--  SLF4J  -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -53,8 +48,7 @@
       <artifactId>slf4j-simple</artifactId>
       <version>2.0.13</version>
     </dependency>
-
-    <!-- Ikonli -->
+    <!--  Ikonli  -->
     <dependency>
       <groupId>org.kordamp.ikonli</groupId>
       <artifactId>ikonli-javafx</artifactId>
@@ -65,43 +59,37 @@
       <artifactId>ikonli-fontawesome5-pack</artifactId>
       <version>12.3.1</version>
     </dependency>
-
-    <!-- PostgreSQL -->
+    <!--  PostgreSQL  -->
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <version>42.7.3</version>
     </dependency>
-
-    <!-- Flyway -->
+    <!--  Flyway  -->
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
       <version>9.22.3</version>
     </dependency>
-
-    <!-- HikariCP -->
+    <!--  HikariCP  -->
     <dependency>
       <groupId>com.zaxxer</groupId>
       <artifactId>HikariCP</artifactId>
       <version>5.1.0</version>
     </dependency>
-
-    <!-- Lombok -->
+    <!--  Lombok  -->
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <version>1.18.32</version>
       <scope>provided</scope>
     </dependency>
-
-    <!-- Spring Boot Web -->
+    <!--  Spring Boot Web  -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
-
-    <!-- Spring JDBC -->
+    <!--  Spring JDBC  -->
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-jdbc</artifactId>
@@ -112,28 +100,24 @@
       <artifactId>spring-web</artifactId>
       <version>6.1.8</version>
     </dependency>
-
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>2.17.1</version>
     </dependency>
-
-    <!-- Spring Context -->
+    <!--  Spring Context  -->
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
       <version>6.1.8</version>
     </dependency>
-
-    <!-- Jakarta Mail (для EmailService) -->
+    <!--  Jakarta Mail (для EmailService)  -->
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>jakarta.mail</artifactId>
       <version>2.0.1</version>
     </dependency>
-
-    <!-- Log4j -->
+    <!--  Log4j  -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
@@ -144,17 +128,43 @@
       <artifactId>log4j-core</artifactId>
       <version>2.24.3</version>
     </dependency>
-
+    <!--  LiqPay: потрібно для JSONObject у LiqPayService  -->
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20240303</version>
+    </dependency>
+    <!--  Bean Validation: @NotNull, @Min, @Max, @Size у BookingRequest  -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+    <!--  ── Тестування ───────────────────────────────────────────────────  -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.12.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>5.12.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
-
   <build>
-
     <resources>
       <resource>
         <directory>src/main/resources</directory>
       </resource>
     </resources>
-
     <pluginManagement>
       <plugins>
         <plugin>
@@ -164,10 +174,8 @@
         </plugin>
       </plugins>
     </pluginManagement>
-
     <plugins>
-
-      <!-- JavaFX Plugin -->
+      <!--  JavaFX Plugin  -->
       <plugin>
         <groupId>org.openjfx</groupId>
         <artifactId>javafx-maven-plugin</artifactId>
@@ -176,8 +184,7 @@
           <mainClass>com.touroperator.ui.MainApp</mainClass>
         </configuration>
       </plugin>
-
-      <!-- Compiler -->
+      <!--  Compiler  -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -186,8 +193,7 @@
           <release>21</release>
         </configuration>
       </plugin>
-
-      <!-- Fat JAR -->
+      <!--  Fat JAR  -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
@@ -223,9 +229,6 @@
           </execution>
         </executions>
       </plugin>
-
     </plugins>
-
   </build>
-
 </project>

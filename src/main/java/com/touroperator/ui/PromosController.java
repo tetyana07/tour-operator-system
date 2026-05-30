@@ -38,7 +38,7 @@ public class PromosController {
         }
     }
 
-    // ── Перемалювати всі картки ───────────────────────────────────────────
+
     private void refreshCards() {
         if (promosContainer == null) return;
         promosContainer.getChildren().clear();
@@ -49,7 +49,7 @@ public class PromosController {
         promosContainer.getChildren().add(buildAddCard());
     }
 
-    // ── Побудова картки промокоду ─────────────────────────────────────────
+
     private VBox buildPromoCard(PromoCode p) {
         VBox card = new VBox(8);
         card.getStyleClass().add("panel-card");
@@ -77,7 +77,7 @@ public class PromosController {
         status.getStyleClass().add(p.isValid() ? "pill-active" : "pill-expired");
         HBox.setHgrow(status, Priority.ALWAYS);
 
-        // Кнопка видалення
+
         Button delBtn = new Button("🗑");
         delBtn.getStyleClass().add("btn-ghost");
         delBtn.setStyle("-fx-font-size:11px;-fx-padding:3 7;");
@@ -92,7 +92,7 @@ public class PromosController {
         return card;
     }
 
-    // ── Картка «Додати новий промокод» (пунктирна рамка) ──────────────────
+
     private VBox buildAddCard() {
         VBox card = new VBox();
         card.setPrefWidth(240);
@@ -125,7 +125,7 @@ public class PromosController {
 
         card.getChildren().addAll(plus, text);
 
-        // Hover ефект
+
         card.setOnMouseEntered(e -> card.setStyle(
               "-fx-background-color:rgba(99,153,34,0.07);" +
                     "-fx-border-color:#4a8c1c;" +
@@ -149,7 +149,7 @@ public class PromosController {
         return card;
     }
 
-    // ── Діалог створення нового промокоду ─────────────────────────────────
+
     @FXML
     private void onAddPromo() {
         Stage stage = new Stage(StageStyle.TRANSPARENT);
@@ -163,7 +163,7 @@ public class PromosController {
         modal.setMaxWidth(460);
         modal.setPrefWidth(460);
 
-        // ── HERO HEADER (темний, як у NewBookingDialog) ──────────────
+
         HBox hero = new HBox(12);
         hero.setAlignment(Pos.CENTER_LEFT);
         hero.setStyle(
@@ -194,7 +194,7 @@ public class PromosController {
 
         hero.getChildren().addAll( heroText, closeBtn);
 
-        // ── BODY ────────────────────────────────────────────────────
+
         VBox body = new VBox(18);
         body.setPadding(new Insets(26, 26, 10, 26));
 
@@ -210,7 +210,7 @@ public class PromosController {
                     "-fx-border-radius:10; -fx-background-radius:10;" +
                     "-fx-text-fill:#0d2010; -fx-padding:11 14;"
         );
-        // Авто-великі літери при вводі
+
         codeField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null && !newVal.equals(newVal.toUpperCase())) {
                 int caret = codeField.getCaretPosition();
@@ -219,10 +219,10 @@ public class PromosController {
             }
         });
 
-        // --- Рядок: ЗНИЖКА + ДІЙСНИЙ ДО (поряд) ---
+
         HBox row2 = new HBox(14);
 
-        // Спінер знижки
+
         Spinner<Integer> discountSpinner = new Spinner<>(1, 99, 10, 1);
         discountSpinner.setEditable(true);
         HBox.setHgrow(discountSpinner, Priority.ALWAYS);
@@ -237,7 +237,7 @@ public class PromosController {
                     "-fx-font-size:14px; -fx-font-family:'DM Sans';"
         );
 
-        // DatePicker
+
         DatePicker datePicker = new DatePicker(LocalDate.now().plusMonths(3));
         HBox.setHgrow(datePicker, Priority.ALWAYS);
         datePicker.setMaxWidth(Double.MAX_VALUE);
@@ -255,7 +255,7 @@ public class PromosController {
         HBox.setHgrow(dateBlock, Priority.ALWAYS);
         row2.getChildren().addAll(discountBlock, dateBlock);
 
-        // --- Превью промокоду (динамічне) ---
+
         HBox previewBox = new HBox(14);
         previewBox.setAlignment(Pos.CENTER_LEFT);
         previewBox.setStyle(
@@ -277,7 +277,7 @@ public class PromosController {
         previewText.getChildren().addAll(previewCode, previewDiscount);
         previewBox.getChildren().addAll(previewIcon, previewText);
 
-        // Оновлення превью при зміні полів
+
         Runnable updatePreview = () -> {
             String c = codeField.getText().trim();
             int pct  = discountSpinner.getValue();
@@ -291,7 +291,7 @@ public class PromosController {
         discountSpinner.valueProperty().addListener((o, ov, nv) -> updatePreview.run());
         datePicker.valueProperty().addListener((o, ov, nv) -> updatePreview.run());
 
-        // --- Повідомлення про помилку ---
+
         Label errorLabel = new Label();
         errorLabel.setStyle(
               "-fx-text-fill:#b83c2a; -fx-font-size:12px;" +
@@ -312,7 +312,7 @@ public class PromosController {
               errorLabel
         );
 
-        // ── FOOTER ──────────────────────────────────────────────────
+
         HBox footer = new HBox(10);
         footer.getStyleClass().add("tour-detail-footer");
         footer.setAlignment(Pos.CENTER_RIGHT);
@@ -357,7 +357,7 @@ public class PromosController {
         footer.getChildren().addAll(cancelBtn, saveBtn);
         modal.getChildren().addAll(hero, body, footer);
 
-        // ── OVERLAY + SCENE ─────────────────────────────────────────
+
         StackPane overlay = new StackPane(modal);
         overlay.getStyleClass().add("modal-overlay-pane");
         Scene scene = new Scene(overlay, 520, 480);
@@ -368,7 +368,7 @@ public class PromosController {
         stage.showAndWait();
     }
 
-    // ── Хелпери ───────────────────────────────────────────────────────────
+
     private void showError(Label lbl, String msg) {
         lbl.setText(msg);
         lbl.setVisible(true);

@@ -9,34 +9,29 @@ import java.util.List;
 public class SidebarController {
 
     @FXML private Button    btnTours;
-    @FXML private StackPane bookingsBadgePane; // StackPane що містить btnBookings + badge
+    @FXML private StackPane bookingsBadgePane;
     @FXML private Button    btnBookings;
     @FXML private Button    btnPayments;
     @FXML private Button    btnClients;
     @FXML private Button    btnPromos;
     @FXML private Button    btnReports;
-    @FXML private Button    btnSettings;
 
     private List<Button> allBtns;
 
     @FXML
     public void initialize() {
         allBtns = List.of(btnTours, btnBookings, btnPayments,
-              btnClients, btnPromos, btnReports, btnSettings);
+              btnClients, btnPromos, btnReports);
     }
 
-    /**
-     * Матриця доступу:
-     *   ADMIN  — всі пункти
-     *   CLIENT — тільки Тури, Бронювання, Налаштування
-     */
+
     public void applyRole(UserRole role) {
         boolean isAdmin = role == UserRole.ADMIN;
         setVisible(btnPayments, isAdmin);
         setVisible(btnClients,  isAdmin);
         setVisible(btnPromos,   isAdmin);
         setVisible(btnReports,  isAdmin);
-        // btnTours, btnBookings, btnSettings — для всіх
+
     }
 
     private void setVisible(Button btn, boolean visible) {
@@ -58,7 +53,7 @@ public class SidebarController {
         clicked.getStyleClass().remove("nav-icon-btn");
         clicked.getStyleClass().add("nav-icon-btn-active");
 
-        // Отримуємо MainController через userData сцени
+
         Object userData = clicked.getScene().getUserData();
         if (userData instanceof MainController mc) {
             mc.showPage((String) clicked.getUserData());

@@ -40,7 +40,7 @@
           <VBox HBox.hgrow="ALWAYS" spacing="6" style="-fx-padding:0 16 0 14;">
             <Label text="БРОНЮВАНЬ (АКТИВНИХ)" styleClass="stat-label-v2"/>
             <Label fx:id="statBookings" text="..." styleClass="stat-value-v2-green"/>
-            <Label text="Підтверджені броні" styleClass="stat-hint"/>
+            <Label text="Незавершені броні" styleClass="stat-hint"/>
           </VBox>
 
         </HBox>
@@ -100,6 +100,7 @@
           <Label text="Завантаженість турів" styleClass="table-title-lbl"/>
           <Label text="Показники бронювань та заповнення" styleClass="stat-hint"/>
         </VBox>
+        <Button text="Експорт PDF ↓" styleClass="add-btn" onAction="#onExportPdf" style="-fx-margin-right:8;"/>
         <Button text="Експорт Excel ↓" styleClass="add-btn" onAction="#onExportExcel"/>
       </HBox>
       <HBox styleClass="table-head-row" spacing="0">

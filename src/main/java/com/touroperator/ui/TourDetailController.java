@@ -28,7 +28,7 @@ public class TourDetailController {
     @FXML private VBox  weatherCard;
     @FXML private javafx.scene.layout.StackPane weatherCardWrapper;
 
-    // Створюємо програмно — не через FXML ін'єкцію
+       
     private javafx.scene.image.ImageView weatherBgImage;
     @FXML private Label quotaLabel;
     @FXML private ProgressBar quotaBar;
@@ -50,27 +50,27 @@ public class TourDetailController {
 
     @FXML
     public void initialize() {
-        // FontIcon хрестик
+           
         FontIcon xIcon = new FontIcon("fas-times");
         xIcon.setIconSize(13);
         xIcon.setStyle("-fx-icon-color: white;");
-        // closeBtn is now a Label — text "✕" set in FXML
+           
 
-        // Заокруглення героя — clip щоб зображення не виходило за межі
+           
         javafx.scene.shape.Rectangle heroClip = new javafx.scene.shape.Rectangle();
         heroClip.setArcWidth(56); heroClip.setArcHeight(56);
         heroPane.layoutBoundsProperty().addListener((o, ov, nv) -> {
             heroClip.setWidth(nv.getWidth());
-            heroClip.setHeight(nv.getHeight() + 28); // +28 щоб знизу не обрізало
+            heroClip.setHeight(nv.getHeight() + 28);    
         });
         heroPane.setClip(heroClip);
 
-        // Створюємо ImageView для фону погоди програмно
+           
         weatherBgImage = new javafx.scene.image.ImageView();
         weatherBgImage.setPreserveRatio(false);
         weatherBgImage.setSmooth(true);
         weatherBgImage.setVisible(false);
-        // Прив'язуємо розмір до weatherCard
+           
         weatherCard.layoutBoundsProperty().addListener((o, ov, nv) -> {
             weatherBgImage.setFitWidth(nv.getWidth());
             weatherBgImage.setFitHeight(nv.getHeight());
@@ -100,7 +100,7 @@ public class TourDetailController {
         this.tourId     = data.tourId();
         this.tourStatus = data.status();
 
-        // Підтягуємо актуальну квоту з БД (дані в data могли бути взяті до бронювань)
+           
         int[] quota = { data.booked(), data.total() };
         if (data.tourId() != null) {
             try {
@@ -118,10 +118,10 @@ public class TourDetailController {
 
         heroName.setText(data.name());
         heroCountry.setText(data.country());
-        // Ціна — завжди через CurrencySession щоб відображати актуальну валюту
+           
         java.math.BigDecimal rawPrice = data.rawPrice() != null ? data.rawPrice() : java.math.BigDecimal.ZERO;
         heroPrice.setText(ProfilePanelController.CurrencySession.format(rawPrice));
-        // Оновлюємо ціну при зміні валюти (діалог може бути відкритий)
+           
         ProfilePanelController.CurrencySession.addListener(
               () -> javafx.application.Platform.runLater(
                     () -> heroPrice.setText(ProfilePanelController.CurrencySession.format(rawPrice))
@@ -129,14 +129,14 @@ public class TourDetailController {
         );
         heroPane.setStyle("-fx-background-color:" + data.gradient() + ";");
 
-        // Показуємо фото якщо є
+           
         System.out.println("[PHOTO] imagePath = '" + data.imagePath() + "'");
         if (data.imagePath() != null && !data.imagePath().isBlank()) {
             try {
                 java.io.File imgFile = new java.io.File(data.imagePath());
                 System.out.println("[PHOTO] file exists = " + imgFile.exists() + ", path = " + imgFile.getAbsolutePath());
                 if (imgFile.exists()) {
-                    // toURI() правильно кодує пробіли та спецсимволи у шляху
+                       
                     String uriStr = imgFile.toURI().toURL().toExternalForm();
                     System.out.println("[PHOTO] URI = " + uriStr);
                     Image img = new Image(uriStr, true);
@@ -165,19 +165,19 @@ public class TourDetailController {
         setChip(chipFoodBox,      chipFood,       data.food());
         setChip(chipInsuranceBox, chipInsurance, data.hasInsurance() ? "Включено" : null);
 
-        // Динамічна секція "Що включено"
+           
         populateIncluded(data);
 
-        // Визначаємо тип погоди і налаштовуємо картку
+           
         String desc = data.weatherDesc() != null ? data.weatherDesc().toLowerCase() : "";
         String weatherType = resolveWeatherType(desc, data.weatherTemp());
         applyWeatherTheme(weatherType);
 
-        // Іконка погоди прихована — фон картки вже передає погоду
+           
         weatherIcon.setVisible(false);
         weatherIcon.setManaged(false);
 
-        // Без іконки — тільки текст
+           
         weatherCity.setGraphic(null);
         weatherCity.setText(data.country());
 
@@ -191,7 +191,7 @@ public class TourDetailController {
         double progress = freshTotal > 0 ? (double) freshBooked / freshTotal : 0;
         quotaBar.setProgress(progress);
 
-        // Налаштовуємо кнопки залежно від статусу туру
+           
         updateButtonStates();
     }
 
@@ -201,17 +201,17 @@ public class TourDetailController {
         boolean isActive    = tourStatus == TourStatus.ACTIVE || tourStatus == TourStatus.FULL;
         boolean isAdmin     = currentRole == UserRole.ADMIN;
 
-        // "Скасувати" — тільки адмін, тільки для активних
+           
         if (cancelTourBtn != null) {
             cancelTourBtn.setVisible(isAdmin && isActive);
             cancelTourBtn.setManaged(isAdmin && isActive);
         }
-        // "Архівувати" — тільки адмін
+           
         if (archiveTourBtn != null) {
             archiveTourBtn.setVisible(isAdmin && !isArchived);
             archiveTourBtn.setManaged(isAdmin && !isArchived);
         }
-        // "Забронювати" — тільки для активних (не повних, не скасованих, не архів)
+           
         if (bookBtn != null) {
             bookBtn.setVisible(tourStatus == TourStatus.ACTIVE);
             bookBtn.setManaged(tourStatus == TourStatus.ACTIVE);
@@ -277,11 +277,11 @@ public class TourDetailController {
           String humidity, String wind, String feelsLike,
           int booked, int total,
           String imagePath,
-          // Що включено
+             
           boolean hasFlight, boolean hasInsurance, boolean hasTransfer, boolean hasGuide
     ) {}
 
-    // ── Кольорова іконка погоди через Canvas ────────────────────────────────
+       
     private javafx.scene.Node buildWeatherIcon(String type) {
         javafx.scene.canvas.Canvas c = new javafx.scene.canvas.Canvas(64, 64);
         javafx.scene.canvas.GraphicsContext g = c.getGraphicsContext2D();
@@ -289,7 +289,7 @@ public class TourDetailController {
 
         switch (type) {
             case "sunny" -> {
-                // Сонце: жовте коло + промені
+                   
                 g.setFill(javafx.scene.paint.Color.web("#FFD700"));
                 g.fillOval(17, 17, 30, 30);
                 g.setStroke(javafx.scene.paint.Color.web("#FFB300"));
@@ -304,7 +304,7 @@ public class TourDetailController {
                 }
             }
             case "partly" -> {
-                // Сонце зверху-зліва
+                   
                 g.setFill(javafx.scene.paint.Color.web("#FFD700"));
                 g.fillOval(4, 4, 24, 24);
                 g.setStroke(javafx.scene.paint.Color.web("#FFB300"));
@@ -317,7 +317,7 @@ public class TourDetailController {
                     double y2 = 16 + Math.sin(angle) * 18;
                     g.strokeLine(x1, y1, x2, y2);
                 }
-                // Хмара поверх
+                   
                 drawCloud(g, 18, 32, javafx.scene.paint.Color.web("#e8eef5"), javafx.scene.paint.Color.web("#c8d8e8"));
             }
             case "cloudy" -> {
@@ -326,7 +326,7 @@ public class TourDetailController {
             }
             case "rain" -> {
                 drawCloud(g, 10, 18, javafx.scene.paint.Color.web("#8090a8"), javafx.scene.paint.Color.web("#607080"));
-                // Краплі дощу
+                   
                 g.setStroke(javafx.scene.paint.Color.web("#5090d0"));
                 g.setLineWidth(2);
                 g.strokeLine(18, 42, 15, 52);
@@ -335,39 +335,39 @@ public class TourDetailController {
                 g.strokeLine(42, 42, 39, 52);
             }
             case "storm" -> {
-                // Темна хмара з тінню
+                   
                 drawCloud(g, 4, 8, javafx.scene.paint.Color.web("#384858"), javafx.scene.paint.Color.web("#20303e"));
                 drawCloud(g, 12, 20, javafx.scene.paint.Color.web("#4a5c6e"), javafx.scene.paint.Color.web("#2e3e50"));
-                // Блискавка — класична стрілка вниз
+                   
                 g.setFill(javafx.scene.paint.Color.web("#FFE033"));
-                // Верхня частина блискавки (широка)
+                   
                 double[] tx = {28, 34, 31, 36};
                 double[] ty = {38, 38, 48, 48};
                 g.fillPolygon(tx, ty, 4);
-                // Нижня частина (вузька)
+                   
                 double[] bx2 = {31, 36, 32, 37};
                 double[] by2 = {48, 48, 60, 60};
                 g.fillPolygon(bx2, by2, 4);
-                // Ефект свічення
+                   
                 g.setFill(javafx.scene.paint.Color.web("#FFEE88", 0.3));
                 g.fillOval(25, 36, 16, 26);
             }
             case "snow" -> {
                 drawCloud(g, 10, 18, javafx.scene.paint.Color.web("#b0c8e0"), javafx.scene.paint.Color.web("#90a8c0"));
-                // Сніжинка
+                   
                 g.setStroke(javafx.scene.paint.Color.web("#a0d0ff"));
                 g.setLineWidth(2);
                 g.strokeLine(32, 42, 32, 58);
                 g.strokeLine(24, 46, 40, 54);
                 g.strokeLine(24, 54, 40, 46);
-                // Кінці сніжинки
+                   
                 for (double[] p : new double[][]{{32,42},{32,58},{24,46},{40,54},{24,54},{40,46}}) {
                     g.strokeLine(p[0]-3, p[1]-3, p[0]+3, p[1]+3);
                     g.strokeLine(p[0]+3, p[1]-3, p[0]-3, p[1]+3);
                 }
             }
             case "fog" -> {
-                // Хвилясті лінії туману
+                   
                 g.setStroke(javafx.scene.paint.Color.web("#b0c0c8"));
                 g.setLineWidth(3);
                 for (int row = 0; row < 4; row++) {
@@ -376,7 +376,7 @@ public class TourDetailController {
                 }
             }
             default -> {
-                // Хмара + сонце (default)
+                   
                 g.setFill(javafx.scene.paint.Color.web("#FFD700"));
                 g.fillOval(10, 8, 22, 22);
                 drawCloud(g, 18, 30, javafx.scene.paint.Color.web("#e8eef5"), javafx.scene.paint.Color.web("#c8d8e8"));
@@ -385,7 +385,7 @@ public class TourDetailController {
         return c;
     }
 
-    // ── Малює хмару у заданій позиції ───────────────────────────────────────
+       
     private void drawCloud(javafx.scene.canvas.GraphicsContext g,
           double x, double y,
           javafx.scene.paint.Color fill,
@@ -393,21 +393,21 @@ public class TourDetailController {
         g.setFill(fill);
         g.setStroke(stroke);
         g.setLineWidth(1.5);
-        // три кола що утворюють хмару
+           
         g.fillOval(x,      y + 8,  22, 18);
         g.fillOval(x + 14, y + 12, 18, 14);
         g.fillOval(x + 6,  y,      20, 20);
         g.strokeOval(x,      y + 8,  22, 18);
         g.strokeOval(x + 14, y + 12, 18, 14);
         g.strokeOval(x + 6,  y,      20, 20);
-        // закриваємо низ
+           
         g.fillRect(x + 1,  y + 14, 32, 13);
         g.setStroke(fill);
         g.setLineWidth(2);
         g.strokeLine(x + 1, y + 27, x + 33, y + 27);
     }
 
-    // ── Визначає тип погоди за описом ───────────────────────────────────────
+       
     private String resolveWeatherType(String desc, String tempStr) {
         if (desc.contains("гроза") || desc.contains("thunder") || desc.contains("storm")) return "storm";
         if (desc.contains("сніг")  || desc.contains("snow")    || desc.contains("blizzard")) return "snow";
@@ -416,7 +416,7 @@ public class TourDetailController {
         if (desc.contains("похмуро") || desc.contains("overcast") || desc.contains("хмарно")) return "cloudy";
         if (desc.contains("мінливо") || desc.contains("partly"))   return "partly";
         if (desc.contains("сонячно") || desc.contains("sunny")  || desc.contains("ясно") || desc.contains("clear")) return "sunny";
-        // fallback по температурі
+           
         try {
             int t = Integer.parseInt(tempStr.replaceAll("[^\\-0-9]", ""));
             if (t <= 0)  return "snow";
@@ -425,9 +425,9 @@ public class TourDetailController {
         return "partly";
     }
 
-    // ── Емодзі для типу погоди ───────────────────────────────────────────────
+       
 
-    // ── Динамічний фон картки залежно від погоди ─────────────────────────────
+       
     private void applyWeatherTheme(String type) {
         String imageName = switch (type) {
             case "sunny"            -> "Sunny.jpg";
@@ -447,7 +447,7 @@ public class TourDetailController {
                           url.toExternalForm(), true);
                     weatherBgImage.setImage(img);
                     weatherBgImage.setVisible(true);
-                    // Clip щоб фото не виходило за rounded corners
+                       
                     javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle();
                     clip.setArcWidth(36); clip.setArcHeight(36);
                     weatherCardWrapper.layoutBoundsProperty().addListener((o, ov, nv) -> {
@@ -455,7 +455,7 @@ public class TourDetailController {
                         clip.setHeight(nv.getHeight());
                     });
                     weatherCardWrapper.setClip(clip);
-                    // Ховаємо Canvas іконку і globe — на фото вже є погода
+                       
                     weatherIcon.setVisible(false);
                     weatherIcon.setManaged(false);
                     weatherCity.setGraphic(null);
@@ -469,7 +469,7 @@ public class TourDetailController {
             weatherBgImage.setImage(null);
             weatherIcon.setVisible(false);
             weatherIcon.setManaged(false);
-            // Fallback градієнт через CSS
+               
             weatherCard.setStyle(
                   "-fx-background-color: " + fallbackGradient(type) + "; " +
                         "-fx-background-radius: 18; -fx-padding: 18 22 18 22;");
@@ -477,8 +477,8 @@ public class TourDetailController {
             weatherCard.setStyle("-fx-background-color: transparent; -fx-padding: 18 22 18 22;");
         }
 
-        // Колір тексту — темний для світлого неба, білий для темних тем
-        // Темні фото (гроза, дощ, хмарно) — білий текст; світлі (сонце, сніг) — темний
+           
+           
         boolean lightBg = !photoLoaded
               || type.equals("sunny") || type.equals("snow");
         String tc = lightBg ? "#1a2a3a" : "white";
@@ -493,7 +493,7 @@ public class TourDetailController {
         weatherWind.setStyle    ("-fx-font-family:'Syne'; -fx-font-size:14px; -fx-font-weight:bold; -fx-text-fill:" + tc + "; -fx-alignment:CENTER;");
         weatherFeels.setStyle   ("-fx-font-family:'Syne'; -fx-font-size:14px; -fx-font-weight:bold; -fx-text-fill:" + tc + "; -fx-alignment:CENTER;");
 
-        // Стилізуємо підписи статистики (Вологість/Вітер/Відчувається)
+           
         try {
             javafx.scene.layout.HBox statRow = (javafx.scene.layout.HBox)
                   weatherCard.getChildren().get(weatherCard.getChildren().size() - 1);
@@ -527,12 +527,12 @@ public class TourDetailController {
         };
     }
 
-    // ── Динамічно заповнює секцію "Що включено" ─────────────────────────────
+       
     private void populateIncluded(TourData data) {
         if (includedFlow == null) return;
         includedFlow.getChildren().clear();
 
-        // Готель завжди показується якщо він є (не "Без готелю")
+           
         String hotel = data.hotel();
         boolean hasHotel = hotel != null && !hotel.isBlank()
               && !hotel.equals("—") && !hotel.equals("-") && !hotel.equals("Без готелю");
@@ -552,7 +552,7 @@ public class TourDetailController {
         includedFlow.getChildren().add(lbl);
     }
 
-    // ── Показує чіп тільки якщо значення непорожнє ──────────────────────────
+       
     private void setChip(VBox box, Label lbl, String value) {
         boolean hasValue = value != null && !value.isBlank()
               && !value.equals("—") && !value.equals("-");

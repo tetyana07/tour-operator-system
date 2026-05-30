@@ -68,19 +68,9 @@ public class VoyaAlert {
     }
 
     private static void showConfirm(String message, Window owner, Runnable onConfirm) {
-        // Знаходимо активне вікно якщо owner не передано
-        Window effectiveOwner = owner;
-        if (effectiveOwner == null) {
-            effectiveOwner = javafx.stage.Window.getWindows().stream()
-                  .filter(w -> w instanceof Stage && w.isShowing() && w.isFocused())
-                  .findFirst()
-                  .orElse(javafx.stage.Window.getWindows().stream()
-                        .filter(w -> w instanceof Stage && w.isShowing())
-                        .findFirst().orElse(null));
-        }
-        final Window finalOwner = effectiveOwner;
+        final Window finalOwner = resolveOwner(owner);
 
-        // UNDECORATED — надійно отримує фокус на Windows; rounded corners через CSS картки
+           
         Stage stage = new Stage(StageStyle.UNDECORATED);
         stage.initModality(Modality.APPLICATION_MODAL);
         if (finalOwner != null) stage.initOwner(finalOwner);
@@ -149,35 +139,53 @@ public class VoyaAlert {
 
         stage.setScene(scene);
         stage.sizeToScene();
-        // Центруємо відносно батьківського вікна після показу
-        if (finalOwner != null) {
-            stage.setOnShown(e -> {
-                stage.setX(finalOwner.getX() + (finalOwner.getWidth()  - stage.getWidth())  / 2);
-                stage.setY(finalOwner.getY() + (finalOwner.getHeight() - stage.getHeight()) / 2);
-            });
-        } else {
-            stage.centerOnScreen();
-        }
+           
+        stage.setOnShown(e -> {
+            centerOnOwner(stage, finalOwner);
+            stage.toFront();
+            stage.requestFocus();
+        });
         stage.showAndWait();
     }
 
-    private static void show(Type type, String message, Window owner) {
-        Window effectiveOwner = owner;
-        if (effectiveOwner == null) {
-            effectiveOwner = javafx.stage.Window.getWindows().stream()
-                  .filter(w -> w instanceof Stage && w.isShowing() && w.isFocused())
-                  .findFirst()
-                  .orElse(javafx.stage.Window.getWindows().stream()
-                        .filter(w -> w instanceof Stage && w.isShowing())
-                        .findFirst().orElse(null));
+    /** \u0417\u043d\u0430\u0445\u043e\u0434\u0438\u0442\u0438 \u043d\u0430\u0439\u0432\u0456\u0434\u043f\u043e\u0432\u0456\u0434\u043d\u0456\u0448\u0438\u0439 owner: \u043e\u0441\u0442\u0430\u043d\u043d\u0454 \u0432\u0456\u0434\u043a\u0440\u0438\u0442\u0435 \u0432\u0456\u043a\u043d\u043e (\u043d\u0430\u0439\u0447\u0430\u0441\u0442\u0456\u0448\u0435 \u0434\u0456\u0430\u043b\u043e\u0433) */
+    private static Window resolveOwner(Window hint) {
+        if (hint != null) return hint;
+        java.util.List<Window> visible = javafx.stage.Window.getWindows().stream()
+              .filter(w -> w instanceof Stage && w.isShowing())
+              .collect(java.util.stream.Collectors.toList());
+        if (visible.isEmpty()) return null;
+           
+        return visible.get(visible.size() - 1);
+    }
+
+    /** \u0426\u0435\u043d\u0442\u0440\u0443\u0454\u043c\u043e stage \u0432\u0456\u0434\u043d\u043e\u0441\u043d\u043e owner, \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e \u043e\u0431\u0440\u043e\u0431\u043b\u044f\u044e\u0447\u0438 \u043f\u043e\u0432\u043d\u043e\u0435\u043a\u0440\u0430\u043d\u043d\u0438\u0439 \u0440\u0435\u0436\u0438\u043c */
+    private static void centerOnOwner(Stage dialog, Window owner) {
+        if (owner == null) { dialog.centerOnScreen(); return; }
+           
+        boolean fullscreen = (owner instanceof Stage) && ((Stage) owner).isFullScreen();
+        double ox, oy, ow, oh;
+        if (fullscreen) {
+            javafx.geometry.Rectangle2D bounds =
+                  javafx.stage.Screen.getPrimary().getVisualBounds();
+            ox = bounds.getMinX(); oy = bounds.getMinY();
+            ow = bounds.getWidth(); oh = bounds.getHeight();
+        } else {
+            ox = owner.getX(); oy = owner.getY();
+            ow = owner.getWidth(); oh = owner.getHeight();
         }
-        final Window finalOwner = effectiveOwner;
+        dialog.setX(ox + (ow - dialog.getWidth())  / 2);
+        dialog.setY(oy + (oh - dialog.getHeight()) / 2);
+    }
+
+    private static void show(Type type, String message, Window owner) {
+        final Window finalOwner = resolveOwner(owner);
 
         Stage stage = new Stage(StageStyle.UNDECORATED);
         stage.initModality(Modality.APPLICATION_MODAL);
         if (finalOwner != null) stage.initOwner(finalOwner);
 
-        // ── Іконка та акценти за типом ──
+           
         String icon;
         String accentColor;
         String bgColor;
@@ -202,7 +210,7 @@ public class VoyaAlert {
                 bgColor = "#fdecea";
                 titleText = "Помилка";
             }
-            default -> { // INFO
+            default -> {    
                 icon = "i";
                 accentColor = "#27500a";
                 bgColor = "#eaf3de";
@@ -210,7 +218,7 @@ public class VoyaAlert {
             }
         }
 
-        // ── Іконка ──
+           
         Label iconLabel = new Label(icon);
         iconLabel.setStyle(
               "-fx-font-family: 'DM Sans';" +
@@ -224,7 +232,7 @@ public class VoyaAlert {
                     "-fx-background-radius: 50;"
         );
 
-        // ── Заголовок ──
+           
         Label titleLabel = new Label(titleText);
         titleLabel.setStyle(
               "-fx-font-family: 'Syne';" +
@@ -233,7 +241,7 @@ public class VoyaAlert {
                     "-fx-text-fill: #173404;"
         );
 
-        // ── Кнопка закриття ──
+           
         Button closeBtn = new Button("✕");
         closeBtn.setStyle(
               "-fx-background-color: transparent;" +
@@ -262,7 +270,7 @@ public class VoyaAlert {
                     "-fx-padding: 2 6 2 6;"
         ));
 
-        // ── Рядок заголовку ──
+           
         HBox headerRow = new HBox(10, titleLabel);
         headerRow.setAlignment(Pos.CENTER_LEFT);
         Region spacer = new Region();
@@ -275,7 +283,7 @@ public class VoyaAlert {
                     "-fx-border-width: 0 0 1 0;"
         );
 
-        // ── Текст повідомлення ──
+           
         Label msgLabel = new Label(message);
         msgLabel.setStyle(
               "-fx-font-family: 'DM Sans';" +
@@ -290,7 +298,7 @@ public class VoyaAlert {
         VBox msgArea = new VBox(msgLabel);
         msgArea.setPadding(new Insets(16, 20, 8, 20));
 
-        // ── Кнопка OK ──
+           
         Button okBtn = new Button("OK");
         okBtn.setStyle(
               "-fx-background-color: #27500a;" +
@@ -327,7 +335,7 @@ public class VoyaAlert {
         ));
         okBtn.setOnAction(e -> stage.close());
 
-        // ── Кольоровий акцент знизу (смужка) ──
+           
         Region accent = new Region();
         accent.setPrefHeight(3);
         accent.setStyle("-fx-background-color: linear-gradient(to right, #97c459, #27500a); -fx-background-radius: 0 0 14 14;");
@@ -336,7 +344,7 @@ public class VoyaAlert {
         btnRow.setAlignment(Pos.CENTER_RIGHT);
         btnRow.setPadding(new Insets(8, 20, 16, 20));
 
-        // ── Основний контейнер ──
+           
         VBox card = new VBox(topBar, msgArea, btnRow, accent);
         card.setStyle(
               "-fx-background-color: #fdfcf7;" +
@@ -364,14 +372,11 @@ public class VoyaAlert {
 
         stage.setScene(scene);
         stage.sizeToScene();
-        if (finalOwner != null) {
-            stage.setOnShown(e -> {
-                stage.setX(finalOwner.getX() + (finalOwner.getWidth()  - stage.getWidth())  / 2);
-                stage.setY(finalOwner.getY() + (finalOwner.getHeight() - stage.getHeight()) / 2);
-            });
-        } else {
-            stage.centerOnScreen();
-        }
+        stage.setOnShown(e -> {
+            centerOnOwner(stage, finalOwner);
+            stage.toFront();
+            stage.requestFocus();
+        });
         stage.showAndWait();
     }
 }

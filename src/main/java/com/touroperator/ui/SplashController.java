@@ -13,10 +13,7 @@ import javafx.util.Duration;
 
 import java.util.Random;
 
-/**
- * Сплеш-скрін AYVO — точна копія HTML-оригіналу.
- * Анімовані блоби, сітка, частинки, ring-pulse, прогрес-бар.
- */
+
 public class SplashController {
 
     @FXML private Pane  rootPane;
@@ -35,13 +32,13 @@ public class SplashController {
 
     public void setStage(Stage stage) { this.stage = stage; }
 
-    // ── 20 частинок (як у HTML) ──────────────────────────────────────────────
+
     private void spawnParticles() {
         Random rng = new Random();
         for (int i = 0; i < 20; i++) {
             double size  = 3 + rng.nextDouble() * 5;
             double x     = rng.nextDouble() * 900;
-            double y     = 180 + rng.nextDouble() * 372; // 30%–90% of 620
+            double y     = 180 + rng.nextDouble() * 372;
             double dur   = 2500 + rng.nextDouble() * 3000;
             double delay = rng.nextDouble() * 3000;
 
@@ -68,14 +65,14 @@ public class SplashController {
         }
     }
 
-    // ── Реалістичне завантаження з паузами + dismiss після завершення
+
     private void animateProgress() {
-        // Чекаємо поки JavaFX зробить layout і ми знатимемо реальну ширину треку
+
         progressTrack.layoutBoundsProperty().addListener((obs, oldVal, newVal) -> {
             double trackWidth = newVal.getWidth();
             if (trackWidth <= 0) return;
 
-            // Слухаємо тільки один раз
+
             progressTrack.layoutBoundsProperty().removeListener((o, ov, nv) -> {});
 
             Timeline fill = new Timeline(
@@ -98,7 +95,7 @@ public class SplashController {
             fill.play();
         });
 
-        // Dismiss після завершення анімації + невелика пауза
+
         PauseTransition wait = new PauseTransition(Duration.millis(3600));
         wait.setOnFinished(e -> {
             FadeTransition fade = new FadeTransition(Duration.millis(650), rootPane);

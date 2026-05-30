@@ -6,6 +6,7 @@ import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.*;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
@@ -13,17 +14,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-/**
- * Головний Spring конфіг.
- * Ініціалізує DataSource (HikariCP connection pool), JdbcTemplate, Flyway.
- *
- * <p>Використовується патерн Connection Pool (HikariCP) замість прямого
- * підключення через DriverManagerDataSource. Це дозволяє повторно
- * використовувати з'єднання з БД замість створення нового для кожного запиту,
- * що значно підвищує продуктивність при паралельних операціях.</p>
- */
 @Configuration
 @ComponentScan(basePackages = "com.touroperator")
+@PropertySource("classpath:application.properties")
 public class AppConfig {
 
     private static final Logger log = LoggerFactory.getLogger(AppConfig.class);
@@ -31,14 +24,14 @@ public class AppConfig {
     private final Properties props = loadProps();
 
     /**
-     * Налаштовує пул з'єднань HikariCP.
-     *
-     * <p>HikariCP — найшвидший JDBC connection pool для Java.
-     * Замість створення нового з'єднання на кожен запит, пул утримує
-     * готові з'єднання і видає їх за потреби.</p>
-     *
-     * @return налаштований {@link DataSource} на основі HikariCP
+     * Реєструє application.properties як джерело для @Value ін'єкцій.
+     * Обов'язково static — Spring має створити цей бін до ініціалізації інших.
      */
+    @Bean
+    public static PropertySourcesPlaceholderConfigurer placeholderConfigurer() {
+        return new PropertySourcesPlaceholderConfigurer();
+    }
+
     @Bean
     public DataSource dataSource() {
         HikariConfig config = new HikariConfig();
@@ -47,19 +40,11 @@ public class AppConfig {
         config.setUsername(props.getProperty("db.user", "postgres"));
         config.setPassword(props.getProperty("db.password", ""));
 
-        // Розмір пулу: мінімум 2, максимум 10 активних з'єднань
         config.setMinimumIdle(2);
         config.setMaximumPoolSize(10);
-
-        // Час очікування з'єднання з пулу — 30 секунд
         config.setConnectionTimeout(30_000);
-
-        // Час простою з'єднання до закриття — 10 хвилин
         config.setIdleTimeout(600_000);
-
-        // Максимальний час життя з'єднання — 30 хвилин
         config.setMaxLifetime(1_800_000);
-
         config.setPoolName("TourOperatorPool");
 
         log.info("HikariCP pool ініціалізовано: {} (max={})",
@@ -68,23 +53,11 @@ public class AppConfig {
         return new HikariDataSource(config);
     }
 
-    /**
-     * Створює {@link JdbcTemplate} на основі пулу з'єднань.
-     *
-     * @param dataSource пул з'єднань HikariCP
-     * @return налаштований JdbcTemplate
-     */
     @Bean
     public JdbcTemplate jdbcTemplate(DataSource dataSource) {
         return new JdbcTemplate(dataSource);
     }
 
-    /**
-     * Ініціалізує Flyway для автоматичного управління міграціями БД.
-     *
-     * @param dataSource пул з'єднань
-     * @return налаштований екземпляр Flyway
-     */
     @Bean(initMethod = "migrate")
     public Flyway flyway(DataSource dataSource) {
         return Flyway.configure()
@@ -94,11 +67,6 @@ public class AppConfig {
               .load();
     }
 
-    /**
-     * Повертає API-ключ для сервісу погоди.
-     *
-     * @return рядок з API-ключем
-     */
     @Bean
     public String weatherApiKey() {
         return props.getProperty("weather.api.key", "");

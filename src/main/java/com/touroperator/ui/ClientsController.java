@@ -264,6 +264,7 @@ public class ClientsController {
     // ── Покращений діалог ────────────────────────────────────────────────
     private void openClientDialog(Client existing) {
         Stage stage = new Stage(StageStyle.TRANSPARENT);
+        stage.initOwner(clientsTable.getScene().getWindow());
         stage.initModality(Modality.APPLICATION_MODAL);
 
         VBox modal = new VBox(0);

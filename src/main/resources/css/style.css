@@ -1488,30 +1488,6 @@
   -fx-effect: dropshadow(gaussian, rgba(39,80,10,0.12), 8, 0.2, 0, 2);
 }
 
-/* Field labels */
-.field-label {
-  -fx-font-family: "DM Sans", sans-serif;
-  -fx-font-size: 12px;
-  -fx-font-weight: 600;
-  -fx-text-fill: #27500a;
-  -fx-letter-spacing: 0.5px;
-}
-.field-input {
-  -fx-background-color: #f4faea;
-  -fx-background-radius: 11;
-  -fx-border-color: rgba(99,153,34,0.25);
-  -fx-border-radius: 11;
-  -fx-border-width: 1.5;
-  -fx-padding: 11 14 11 14;
-  -fx-font-family: "DM Sans", sans-serif;
-  -fx-font-size: 14px;
-  -fx-text-fill: #0d2010;
-  -fx-prompt-text-fill: #b0baa8;
-}
-.field-input:focused {
-  -fx-border-color: #639922;
-  -fx-background-color: white;
-}
 
 /* Auth button */
 .auth-btn {
@@ -1544,18 +1520,6 @@
 /* ════════════════════════════════════════════════════════════════════════
    MAIN LAYOUT — TopBar
    ════════════════════════════════════════════════════════════════════════ */
-
-.topbar {
-  -fx-background-color: rgba(253,252,247,0.96);
-  -fx-border-color: rgba(99,153,34,0.14) transparent transparent transparent;
-  -fx-border-width: 0 0 1 0;
-  -fx-padding: 0 24 0 24;
-  -fx-pref-height: 58px;
-}
-.topbar-right {
-  -fx-spacing: 10;
-  -fx-alignment: CENTER_RIGHT;
-}
 .logo-wrap { -fx-spacing: 10; -fx-cursor: hand; }
 .logo-icon {
   -fx-background-color: #27500a;

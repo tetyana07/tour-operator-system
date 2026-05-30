@@ -25,13 +25,13 @@ public class BottomStripController {
 
     @FXML
     public void initialize() {
-        // Годинник — оновлюється щосекунди
+
         updateClock();
         Timeline clock = new Timeline(new KeyFrame(Duration.seconds(1), e -> updateClock()));
         clock.setCycleCount(Animation.INDEFINITE);
         clock.play();
 
-        // Курс валют — завантажуємо у фоновому потоці, щоб не блокувати UI
+
         Thread rateThread = new Thread(() -> {
             try {
                 CurrencyService svc = SpringContext.getBean(CurrencyService.class);
@@ -46,7 +46,7 @@ public class BottomStripController {
         rateThread.setDaemon(true);
         rateThread.start();
 
-        // Автооновлення курсу щогодини
+
         Timeline rateRefresh = new Timeline(
               new KeyFrame(Duration.hours(1), e -> refreshRates()));
         rateRefresh.setCycleCount(Animation.INDEFINITE);

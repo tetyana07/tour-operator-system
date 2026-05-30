@@ -11,6 +11,14 @@ public class Client {
     private String phone;
     private LocalDate birthDate;
     private String passwordHash;
+    private String verifyToken;
+    private boolean emailVerified;
+
+    public String getVerifyToken() { return verifyToken; }
+    public void setVerifyToken(String verifyToken) { this.verifyToken = verifyToken; }
+
+    public boolean isEmailVerified() { return emailVerified; }
+    public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
 
     public String getEmail() {
         return email;

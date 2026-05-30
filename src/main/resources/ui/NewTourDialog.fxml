@@ -84,7 +84,7 @@
         <!-- Готель -->
         <VBox spacing="5">
           <Label text="ГОТЕЛЬ" styleClass="tour-detail-section-title"/>
-          <ComboBox fx:id="hotelCombo" maxWidth="Infinity" styleClass="voya-input"/>
+          <TextField fx:id="hotelField" promptText="Наприклад: Hilton Paris Opera ★★★★" maxWidth="Infinity" styleClass="voya-input"/>
         </VBox>
 
         <!-- Харчування -->

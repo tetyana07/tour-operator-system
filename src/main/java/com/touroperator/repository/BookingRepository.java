@@ -56,6 +56,24 @@ public class BookingRepository {
         return jdbc.query("SELECT * FROM bookings ORDER BY booking_date DESC", mapper);
     }
 
+    /** Пагінація: page від 0, pageSize = кількість записів на сторінку */
+    public List<Booking> findAll(int page, int pageSize) {
+        return jdbc.query(
+              "SELECT * FROM bookings ORDER BY booking_date DESC LIMIT ? OFFSET ?",
+              mapper, pageSize, (long) page * pageSize);
+    }
+
+    public int countAll() {
+        Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM bookings", Integer.class);
+        return count != null ? count : 0;
+    }
+
+    public int countByStatus(BookingStatus status) {
+        Integer count = jdbc.queryForObject(
+              "SELECT COUNT(*) FROM bookings WHERE status = ?", Integer.class, status.name());
+        return count != null ? count : 0;
+    }
+
 
     public List<Booking> findByStatus(BookingStatus status) {
         return jdbc.query(
@@ -138,6 +156,32 @@ public class BookingRepository {
     public List<Booking> findBySpec(Specification spec) {
         String sql = "SELECT * FROM bookings WHERE " + spec.toSql() + " ORDER BY booking_date DESC";
         return jdbc.query(sql, mapper, spec.getParams());
+    }
+
+
+    public List<Booking> findByDateRange(java.time.LocalDate from, java.time.LocalDate to) {
+        return jdbc.query(
+              "SELECT * FROM bookings WHERE booking_date BETWEEN ? AND ? ORDER BY booking_date DESC",
+              mapper,
+              java.sql.Date.valueOf(from),
+              java.sql.Date.valueOf(to));
+    }
+
+
+    public List<Booking> findByDateRangeAndStatus(java.time.LocalDate from,
+          java.time.LocalDate to,
+          BookingStatus status) {
+        return jdbc.query(
+              """
+              SELECT * FROM bookings
+              WHERE booking_date BETWEEN ? AND ?
+                AND status = ?
+              ORDER BY booking_date DESC
+              """,
+              mapper,
+              java.sql.Date.valueOf(from),
+              java.sql.Date.valueOf(to),
+              status.name());
     }
 
 }

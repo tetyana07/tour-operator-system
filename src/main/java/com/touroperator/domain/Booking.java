@@ -5,10 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Сутність бронювання.
- * Lifecycle: NEW → CONFIRMED → PAID → COMPLETED | CANCELLED
- */
+
 public class Booking {
     private UUID id;
     private UUID clientId;

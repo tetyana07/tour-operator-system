@@ -7,6 +7,7 @@ import com.touroperator.service.BookingService;
 import com.touroperator.service.ReportService;
 import com.touroperator.service.report.ReportParams;
 import com.touroperator.service.report.RevenueExcelReport;
+import com.touroperator.service.report.RevenuePdfReport;
 import javafx.animation.*;
 import javafx.application.Platform;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -29,13 +30,13 @@ public class ReportsController {
     @FXML private DatePicker dateFrom;
     @FXML private DatePicker dateTo;
 
-    // live stat labels
+
     @FXML private Label statRevenue;
     @FXML private Label statBookings;
     @FXML private Label statAvgCheck;
     @FXML private Label statFill;
 
-    // dynamic tour quota table rows
+
     @FXML private VBox tourQuotaRows;
     @FXML private VBox directionsBox;
 
@@ -63,8 +64,7 @@ public class ReportsController {
             updateStats(reportSvc, bookings);
             buildTourQuotaTable(reportSvc);
             buildDirections(reportSvc);
-
-            // Оновлення валюти в реальному часі
+   
             ProfilePanelController.CurrencySession.addListener(() -> {
                 try {
                     ReportService rs = SpringContext.getBean(ReportService.class);
@@ -83,12 +83,12 @@ public class ReportsController {
         try {
             BigDecimal revenue = reportSvc.getTotalRevenue();
 
-            // Активні = CONFIRMED + CREATED (не скасовані і не завершені)
+
             long activeBookings = bookings.stream()
                   .filter(b -> "CONFIRMED".equals(b.getStatus()) || "CREATED".equals(b.getStatus()))
                   .count();
 
-            // Середній чек = виручка / кількість оплачених бронювань
+
             long paidCount = bookings.stream()
                   .filter(b -> "PAID".equals(b.getStatus()) || "COMPLETED".equals(b.getStatus()))
                   .count();
@@ -165,9 +165,9 @@ public class ReportsController {
         if (reportChartBars == null) return;
         reportChartBars.getChildren().clear();
 
-        // Очікувана виручка — всі активні бронювання (не CANCELLED)
+
         Map<Integer, BigDecimal> byMonth      = new HashMap<>();
-        // Оплачено — тільки PAID + COMPLETED
+
         Map<Integer, BigDecimal> paidByMonth  = new HashMap<>();
         Map<Integer, Long>       countByMonth = new HashMap<>();
         for (int i = 1; i <= 12; i++) {
@@ -225,7 +225,7 @@ public class ReportsController {
             bar.widthProperty().bind(col.widthProperty().subtract(4));
             bar.setStyle(accent ? "-fx-fill:#639922;" : "-fx-fill:#c0dd97;");
 
-            // Tooltip: Місяць / Бронювань / роздільник / Очікувана / Оплачено
+
             String divider     = "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500";
             String tooltipText = fullMonthName
                   + "\nБронювань: " + bookingCount
@@ -303,7 +303,7 @@ public class ReportsController {
                     pctLbl.getStyleClass().add("dir-pct-bold");
                 }
 
-                // Small percentage bar
+
                 javafx.scene.layout.StackPane barTrack = new javafx.scene.layout.StackPane();
                 barTrack.setPrefSize(60, 5);
                 barTrack.setMaxSize(60, 5);
@@ -418,7 +418,7 @@ public class ReportsController {
             LocalDate to   = dateTo   != null ? dateTo.getValue()   : null;
             report.generate(new ReportParams(from, to), file.getAbsolutePath());
 
-            // Сповіщення про скачування
+
             try {
                 com.touroperator.service.NotificationService notifSvc =
                       SpringContext.getBean(com.touroperator.service.NotificationService.class);
@@ -428,6 +428,36 @@ public class ReportsController {
             VoyaAlert.success("Звіт збережено:\n" + file.getAbsolutePath());
         } catch (Exception e) {
             VoyaAlert.error("Помилка генерації звіту:\n" + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void onExportPdf() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Зберегти PDF звіт");
+        chooser.getExtensionFilters().add(
+              new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
+        chooser.setInitialFileName("revenue_report.pdf");
+
+        File file = chooser.showSaveDialog(
+              reportChartBars != null ? reportChartBars.getScene().getWindow() : null);
+        if (file == null) return;
+
+        try {
+            RevenuePdfReport report = SpringContext.getBean(RevenuePdfReport.class);
+            LocalDate from = dateFrom != null ? dateFrom.getValue() : null;
+            LocalDate to   = dateTo   != null ? dateTo.getValue()   : null;
+            report.generate(new ReportParams(from, to), file.getAbsolutePath());
+
+            try {
+                com.touroperator.service.NotificationService notifSvc =
+                      SpringContext.getBean(com.touroperator.service.NotificationService.class);
+                notifSvc.notifyPdfExported(file.getName());
+            } catch (Exception ignored) {}
+
+            VoyaAlert.success("PDF звіт збережено:\n" + file.getAbsolutePath());
+        } catch (Exception e) {
+            VoyaAlert.error("Помилка генерації PDF:\n" + e.getMessage());
         }
     }
 }

@@ -97,6 +97,23 @@
           text="Після реєстрації надійде лист для підтвердження email"
           alignment="CENTER" maxWidth="360"/>
       </VBox>
+      <!-- VERIFY панель -->
+      <VBox fx:id="panelVerify" spacing="14" visible="false" managed="false">
+        <VBox spacing="5">
+          <Label styleClass="field-label" text="КОД ПІДТВЕРДЖЕННЯ"/>
+          <TextField fx:id="verifyCodeField" styleClass="field-input"
+            promptText="000000"/>
+        </VBox>
+        <Label fx:id="verifyHint" styleClass="auth-hint" wrapText="true"
+          text="Ми надіслали 6-значний код на вашу пошту. Введіть його нижче."
+          alignment="CENTER" maxWidth="360"/>
+        <Label fx:id="verifyError" styleClass="auth-error-label"
+          text="" wrapText="true" visible="false" managed="false"/>
+        <Button styleClass="auth-btn" text="Підтвердити"
+          maxWidth="Infinity" onAction="#onVerifyCode">
+          <VBox.margin><Insets top="4"/></VBox.margin>
+        </Button>
+      </VBox>
 
     </VBox>
 

@@ -54,7 +54,7 @@ public class TopBarController {
         String initials = toInitials(displayName);
         if (lblUserName != null) lblUserName.setText(initials);
 
-        // Зберігаємо роль для фільтрування сповіщень
+           
         this.currentRole = ("ADMIN".equalsIgnoreCase(roleName)
               || UserRole.ADMIN.getDisplayName().equalsIgnoreCase(roleName))
               ? UserRole.ADMIN : UserRole.CLIENT;
@@ -62,7 +62,7 @@ public class TopBarController {
         ProfilePanelController.SessionState.setDisplayName(displayName);
         ProfilePanelController.SessionState.setRoleName(roleName);
 
-        // Підписуємось на оновлення профілю — знімаємо старий перед додаванням нового
+           
         if (profileNameListener != null) {
             ProfilePanelController.SessionState.removeProfileListener(profileNameListener);
         }
@@ -72,11 +72,11 @@ public class TopBarController {
               });
         ProfilePanelController.SessionState.addProfileListener(profileNameListener);
 
-        // Якщо listener ще не приєднався в initialize() — спробуємо тут
+           
         tryAttachListener();
 
-        // Після зміни ролі — перевіряємо history на непрочитані події
-        // (наприклад: адмін скасував путівку → CLIENT_BOOKING_CANCELLED вже в history)
+           
+           
         checkHistoryForUnread();
     }
 
@@ -103,7 +103,7 @@ public class TopBarController {
         try {
             NotificationService notifSvc = SpringContext.getBean(NotificationService.class);
             myListener = event -> Platform.runLater(() -> {
-                // Клієнт бачить лише свої події (CLIENT_*), адмін — адміністративні
+                   
                 boolean relevant = isRelevantForRole(event.type());
                 if (!relevant) return;
                 unreadCount++;
@@ -121,13 +121,16 @@ public class TopBarController {
         }
     }
 
-    // ── Повноекранний режим ───────────────────────────────────────────────
+       
 
     @FXML
     private void onFullscreenToggle() {
         try {
             javafx.stage.Stage stage = (javafx.stage.Stage) lblUserName.getScene().getWindow();
             boolean full = !stage.isFullScreen();
+               
+            stage.setFullScreenExitHint("");
+            stage.setFullScreenExitKeyCombination(javafx.scene.input.KeyCombination.NO_MATCH);
             stage.setFullScreen(full);
             if (btnFullscreen != null) {
                 btnFullscreen.setText(full ? "⛶" : "⛶");
@@ -140,11 +143,11 @@ public class TopBarController {
         }
     }
 
-    // ── Дзвоник ──────────────────────────────────────────────────────────
+       
 
     /** Знімає listener при logout — запобігає накопиченню "зомбі-listeners" між сесіями */
     public void detachListener() {
-        // Знімаємо notification listener
+           
         if (listenerAttached && myListener != null) {
             try {
                 NotificationService notifSvc = SpringContext.getBean(NotificationService.class);
@@ -154,12 +157,12 @@ public class TopBarController {
                 log.info("NotificationService listener знято");
             } catch (Exception ignored) {}
         }
-        // Знімаємо profile name listener
+           
         if (profileNameListener != null) {
             ProfilePanelController.SessionState.removeProfileListener(profileNameListener);
             profileNameListener = null;
         }
-        // Скидаємо лічильник непрочитаних
+           
         unreadCount = 0;
         Platform.runLater(this::updateBell);
     }
@@ -175,7 +178,7 @@ public class TopBarController {
 
         try {
             NotificationService notifSvc = SpringContext.getBean(NotificationService.class);
-            // Фільтруємо список за роллю
+               
             List<NotificationService.AppNotification> filtered = notifSvc.getRecent(20).stream()
                   .filter(n -> isRelevantForRole(n.type()))
                   .toList();
@@ -203,7 +206,7 @@ public class TopBarController {
             return switch (type) {
                 case BOOKING_CREATED, BOOKING_CONFIRMED, BOOKING_PAID,
                      BOOKING_CANCELLED, BOOKING_COMPLETED, EXCEL_EXPORTED -> true;
-                // CLIENT_* — це сповіщення для клієнта, адмін їх не бачить
+                   
                 default -> false;
             };
         } else {
@@ -306,13 +309,13 @@ public class TopBarController {
             toastPopup.setAutoHide(false);
             toastPopup.getContent().add(toast);
 
-            // Позиція: правий нижній кут відносно вікна
+               
             javafx.stage.Window window = notifBtn.getScene().getWindow();
             double x = window.getX() + window.getWidth()  - 340;
             double y = window.getY() + window.getHeight() - 110;
             toastPopup.show(window, x, y);
 
-            // Анімація: fade in → пауза → fade out
+               
             FadeTransition fadeIn = new FadeTransition(Duration.millis(250), toast);
             fadeIn.setFromValue(0); fadeIn.setToValue(1);
 
@@ -335,7 +338,7 @@ public class TopBarController {
         notifBadge.setVisible(unreadCount > 0);
     }
 
-    // ── Профіль ──────────────────────────────────────────────────────────
+       
 
     @FXML
     private void onUserChipClick() {
@@ -371,7 +374,7 @@ public class TopBarController {
         }
     }
 
-    // ── Утиліта ───────────────────────────────────────────────────────────
+       
 
     private static String toInitials(String displayName) {
         if (displayName == null || displayName.isBlank()) return "??";

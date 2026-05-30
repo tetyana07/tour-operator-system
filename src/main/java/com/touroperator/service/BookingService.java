@@ -8,9 +8,13 @@ import com.touroperator.exception.*;
 import com.touroperator.repository.*;
 import com.touroperator.specification.BookingByClientEmailSpec;
 import com.touroperator.uow.UnitOfWork;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -22,6 +26,8 @@ import java.util.UUID;
 public class BookingService {
 
     private static final Logger log = LoggerFactory.getLogger(BookingService.class);
+    private static final Validator VALIDATOR =
+          Validation.buildDefaultValidatorFactory().getValidator();
 
     private final BookingRepository    bookingRepo;
     private final TourRepository       tourRepo;
@@ -35,6 +41,7 @@ public class BookingService {
     private final NotificationService  notificationService;
     private final EmailService         emailService;
     private final UnitOfWork           unitOfWork;
+    private final BookingAuditService  auditService;
 
     public BookingService(BookingRepository bookingRepo,
           TourRepository tourRepo,
@@ -47,7 +54,8 @@ public class BookingService {
           PricingService pricingService,
           NotificationService notificationService,
           EmailService emailService,
-          UnitOfWork unitOfWork) {
+          UnitOfWork unitOfWork,
+          BookingAuditService auditService) {
         this.bookingRepo         = bookingRepo;
         this.tourRepo            = tourRepo;
         this.clientRepo          = clientRepo;
@@ -60,6 +68,7 @@ public class BookingService {
         this.notificationService = notificationService;
         this.emailService        = emailService;
         this.unitOfWork          = unitOfWork;
+        this.auditService        = auditService;
     }
 
 
@@ -79,7 +88,16 @@ public class BookingService {
     }
 
 
+    @Transactional
     public Booking createBooking(BookingRequest req) {
+           
+        var violations = VALIDATOR.validate(req);
+        if (!violations.isEmpty()) {
+            String msg = violations.stream()
+                  .map(ConstraintViolation::getMessage)
+                  .findFirst().orElse("Помилка валідації запиту");
+            throw new IllegalArgumentException(msg);
+        }
         log.info("Створення бронювання: тур={}, туристи={}", req.getTourId(), req.getTouristCount());
 
 
@@ -149,8 +167,8 @@ public class BookingService {
         booking.setTotalPrice(breakdown.getFinalPrice());
 
 
-        unitOfWork.registerNewBooking(booking);
-        unitOfWork.commit();
+           
+        bookingRepo.save(booking);
         tourRepo.incrementBookedSeats(tour.getId(), req.getTouristCount());
 
 
@@ -169,10 +187,15 @@ public class BookingService {
             com.touroperator.domain.Client client = clientRepo.findById(req.getClientId()).orElse(null);
             String clientName = client != null ? client.getName() : "клієнт";
             notificationService.notifyBookingCreated(tour.getName(), clientName);
+            auditService.log(booking.getId(), clientName, "CREATE", null,
+                  BookingStatus.CREATED.name(),
+                  "Тур: " + tour.getName() + " | Туристів: " + req.getTouristCount()
+                        + " | Сума: " + booking.getTotalPrice());
         } catch (Exception ignored) {}
         return booking;
     }
 
+    @Transactional
     public Booking confirmBooking(UUID bookingId) {
         Booking booking = getBookingOrThrow(bookingId);
         assertStatus(booking, BookingStatus.CREATED,
@@ -186,16 +209,19 @@ public class BookingService {
             com.touroperator.domain.Client client = clientRepo.findById(booking.getClientId()).orElse(null);
             String clientName = client != null ? client.getName() : "клієнт";
             notificationService.notifyBookingConfirmed(tourName, clientName);
-            // Клієнтське сповіщення — тур підтверджено
+               
             String dates = tour != null && tour.getStartDate() != null
                   ? tour.getStartDate() + " – " + tour.getEndDate() : "";
             notificationService.notifyClientBookingConfirmed(tourName, dates.isBlank() ? "" : "Дати: " + dates);
-            // ── E-mail клієнту ──────────────────────────────────────────────
+               
             if (client != null && client.getEmail() != null) {
                 emailService.sendBookingConfirmed(
                       client.getEmail(), clientName, tourName,
                       dates.isBlank() ? "" : dates);
             }
+            auditService.log(bookingId, "SYSTEM", "CONFIRM",
+                  BookingStatus.CREATED.name(), BookingStatus.CONFIRMED.name(),
+                  "Тур: " + tourName + (dates.isBlank() ? "" : " | " + dates));
         } catch (Exception ignored) {}
         return booking;
     }
@@ -206,7 +232,7 @@ public class BookingService {
         assertStatus(booking, BookingStatus.CONFIRMED,
               "Можна оплатити тільки підтверджене бронювання (CONFIRMED)");
 
-        // Створити платіж
+           
         Payment payment = new Payment();
         payment.setId(UUID.randomUUID());
         payment.setBookingId(bookingId);
@@ -221,10 +247,10 @@ public class BookingService {
             Tour tour = tourRepo.findById(booking.getTourId()).orElse(null);
             String tourName = tour != null ? tour.getName() : "тур";
             notificationService.notifyBookingPaid(tourName, String.format("%,.0f", booking.getTotalPrice()));
-            // Клієнтське сповіщення — оплата зарахована
+               
             notificationService.notifyClientPaymentReceived(tourName,
                   "₴" + String.format("%,.0f", booking.getTotalPrice()));
-            // ── E-mail клієнту ──────────────────────────────────────────────
+               
             com.touroperator.domain.Client clientForEmail =
                   clientRepo.findById(booking.getClientId()).orElse(null);
             if (clientForEmail != null && clientForEmail.getEmail() != null) {
@@ -234,10 +260,15 @@ public class BookingService {
                       tourName,
                       "₴" + String.format("%,.0f", booking.getTotalPrice()));
             }
+            auditService.log(bookingId,
+                  clientForEmail != null ? clientForEmail.getName() : "SYSTEM",
+                  "PAY", BookingStatus.CONFIRMED.name(), BookingStatus.PAID.name(),
+                  "Сума: ₴" + String.format("%,.0f", booking.getTotalPrice()) + " | Метод: " + method);
         } catch (Exception ignored) {}
         return payment;
     }
 
+    @Transactional
     public void completeBooking(UUID bookingId) {
         Booking booking = getBookingOrThrow(bookingId);
         assertStatus(booking, BookingStatus.PAID,
@@ -247,10 +278,16 @@ public class BookingService {
         try {
             Tour tour = tourRepo.findById(booking.getTourId()).orElse(null);
             if (tour != null) notificationService.notifyBookingCompleted(tour.getName());
-        } catch (Exception ignored) {}
+            auditService.log(bookingId, "SYSTEM", "COMPLETE",
+                  BookingStatus.PAID.name(), BookingStatus.COMPLETED.name(),
+                  tour != null ? "Тур: " + tour.getName() : null);
+        } catch (Exception e) {
+            log.warn("Помилка сповіщення при завершенні: {}", e.getMessage());
+        }
     }
 
 
+    @Transactional
     public void cancelBooking(UUID bookingId, String reason) {
         Booking booking = getBookingOrThrow(bookingId);
 
@@ -261,11 +298,20 @@ public class BookingService {
                   "Не можна скасувати бронювання зі статусом " + status);
         }
 
-
         bookingRepo.cancel(bookingId, reason);
-
-
         tourRepo.decrementBookedSeats(booking.getTourId(), booking.getTouristCount());
+
+           
+        if (BookingStatus.PAID.name().equals(status)) {
+            Payment refund = new Payment();
+            refund.setId(UUID.randomUUID());
+            refund.setBookingId(bookingId);
+            refund.setAmount(booking.getTotalPrice().negate());    
+            refund.setPaymentDate(java.time.LocalDate.now());
+            refund.setStatus("REFUND");
+            paymentRepo.save(refund);
+            log.info("Рефанд створено: booking={}, сума={}", bookingId, booking.getTotalPrice());
+        }
 
         log.info("Бронювання скасовано: {}, місця повернуто: {}", bookingId, booking.getTouristCount());
         try {
@@ -274,7 +320,6 @@ public class BookingService {
             com.touroperator.domain.Client client = clientRepo.findById(booking.getClientId()).orElse(null);
             String clientName = client != null ? client.getName() : "клієнт";
             notificationService.notifyBookingCancelled(tourName, clientName);
-            // Клієнтське сповіщення — з різним текстом залежно від статусу до скасування
             String refundNote = BookingStatus.PAID.name().equals(status)
                   ? "Кошти буде повернуто протягом 3–5 робочих днів."
                   : "Якщо є питання — зверніться до підтримки.";
@@ -283,11 +328,11 @@ public class BookingService {
                 emailService.sendBookingCancelled(
                       client.getEmail(), clientName, tourName, refundNote);
             }
-        } catch (Exception ignored) {}
-
-
-        if (BookingStatus.PAID.name().equals(status)) {
-            log.warn("Бронювання {} було оплачено — потрібен рефанд!", bookingId);
+            auditService.log(bookingId, clientName, "CANCEL",
+                  status, BookingStatus.CANCELLED.name(),
+                  "Причина: " + reason + (BookingStatus.PAID.name().equals(status) ? " | Рефанд: ₴" + booking.getTotalPrice() : ""));
+        } catch (Exception e) {
+            log.warn("Помилка надсилання сповіщення про скасування: {}", e.getMessage());
         }
     }
 

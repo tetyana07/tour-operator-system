@@ -2,7 +2,9 @@ package com.touroperator.ui;
 
 import com.touroperator.config.SpringContext;
 import com.touroperator.domain.Client;
+import com.touroperator.repository.ClientRepository;
 import com.touroperator.service.ClientService;
+import com.touroperator.service.EmailService;
 import javafx.animation.*;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -15,6 +17,7 @@ import javafx.util.Duration;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.SecureRandom;
 
 public class LoginController {
 
@@ -34,8 +37,15 @@ public class LoginController {
     @FXML private PasswordField regPasswordConfirm;
     @FXML private Label         regHint;
 
+     
+    @FXML private VBox      panelVerify;
+    @FXML private TextField verifyCodeField;
+    @FXML private Label     verifyHint;
+
     private Stage stage;
     private boolean showingLogin = true;
+    /** Email клієнта, що очікує підтвердження */
+    private String pendingVerifyEmail;
 
     private static final String[][] DEMO_USERS = {
           { "admin@ayvo.ua", "admin123", "ADMIN" },
@@ -48,6 +58,7 @@ public class LoginController {
         loginPassword.setOnAction(e -> onLogin());
         regPassword.setOnAction(e -> { if (regPasswordConfirm != null) regPasswordConfirm.requestFocus(); });
         if (regPasswordConfirm != null) regPasswordConfirm.setOnAction(e -> onRegister());
+        if (verifyCodeField != null)    verifyCodeField.setOnAction(e -> onVerifyCode());
     }
 
     @FXML private void showLogin() {
@@ -89,6 +100,22 @@ public class LoginController {
         if (email.isBlank() || pass.isBlank()) { showError("Будь ласка, заповніть всі поля"); return; }
         if (!isValidEmail(email)) { showError("Невірний формат email (наприклад: user@example.com)"); return; }
         if (pass.length() < 6) { showError("Пароль має бути мінімум 6 символів"); return; }
+
+         
+        try {
+            ClientRepository clientRepo = SpringContext.getBean(ClientRepository.class);
+            clientRepo.findByEmail(email).ifPresent(c -> {
+                if (!c.isEmailVerified()) {
+                    throw new RuntimeException("EMAIL_NOT_VERIFIED");
+                }
+            });
+        } catch (RuntimeException ex) {
+            if ("EMAIL_NOT_VERIFIED".equals(ex.getMessage())) {
+                showError("❌ Email не підтверджено. Перевірте пошту і введіть код.");
+                return;
+            }
+        }
+
         UserRole role = resolveRole(email, pass);
         if (role == null) { shakeError("Неправильний email або пароль"); return; }
         openMainApp(email, role);
@@ -100,53 +127,65 @@ public class LoginController {
         String phone = regPhone != null ? regPhone.getText().trim() : "";
         String pass  = regPassword.getText();
 
-        // Перевірка ім'я
+         
         if (name.isBlank()) { setRegHint("❌ Введіть ім'я та прізвище", "#c03030"); return; }
         if (name.length() < 2) { setRegHint("❌ Ім'я занадто коротке", "#c03030"); return; }
 
-        // Перевірка email
+         
         if (email.isBlank()) { setRegHint("❌ Введіть email-адресу", "#c03030"); return; }
         if (!isValidEmail(email)) { setRegHint("❌ Невірний формат email (наприклад: user@example.com)", "#c03030"); return; }
 
-        // Перевірка телефону (якщо введено)
+         
         if (!phone.isBlank() && !isValidPhone(phone)) {
             setRegHint("❌ Невірний формат телефону (наприклад: +380501234567)", "#c03030"); return;
         }
 
-        // Перевірка пароля
+         
         if (pass.isBlank()) { setRegHint("❌ Введіть пароль", "#c03030"); return; }
         if (pass.length() < 8) { setRegHint("❌ Пароль має бути мінімум 8 символів", "#c03030"); return; }
         if (!hasDigit(pass)) { setRegHint("❌ Пароль має містити хоча б одну цифру", "#c03030"); return; }
         if (!hasLetter(pass)) { setRegHint("❌ Пароль має містити хоча б одну літеру", "#c03030"); return; }
 
-        // Перевірка підтвердження пароля
+         
         String passConfirm = regPasswordConfirm != null ? regPasswordConfirm.getText() : "";
         if (!pass.equals(passConfirm)) { setRegHint("❌ Паролі не збігаються", "#c03030"); return; }
 
-        // Зберігаємо клієнта в базу даних
+         
         try {
             ClientService clientService = SpringContext.getBean(ClientService.class);
-            com.touroperator.repository.ClientRepository clientRepo =
-                  SpringContext.getBean(com.touroperator.repository.ClientRepository.class);
+            ClientRepository clientRepo = SpringContext.getBean(ClientRepository.class);
+            EmailService emailService   = SpringContext.getBean(EmailService.class);
+
             if (clientRepo.findByEmail(email).isPresent()) {
                 setRegHint("❌ Цей email вже зареєстрований", "#c03030");
                 return;
             }
+
+             
+            String verifyToken = generateVerifyToken();
+
             Client newClient = new Client();
             newClient.setName(name);
             newClient.setEmail(email);
             newClient.setPhone(phone.isBlank() ? null : phone);
             newClient.setPasswordHash(hashPassword(pass));
+            newClient.setVerifyToken(verifyToken);
+            newClient.setEmailVerified(false);
             clientService.save(newClient);
+
+             
+            emailService.sendVerificationEmail(email, name, verifyToken);
+            pendingVerifyEmail = email;
         } catch (Exception ex) {
             ex.printStackTrace();
             setRegHint("❌ Помилка збереження: " + ex.getMessage(), "#c03030");
             return;
         }
 
-        setRegHint("✓ Реєстрація успішна! Входимо...", "#639922");
-        PauseTransition delay = new PauseTransition(Duration.millis(700));
-        delay.setOnFinished(e -> Platform.runLater(() -> openMainApp(email, UserRole.CLIENT)));
+         
+        setRegHint("✓ На вашу пошту надіслано код підтвердження!", "#639922");
+        PauseTransition delay = new PauseTransition(Duration.millis(800));
+        delay.setOnFinished(e -> Platform.runLater(this::showVerifyPanel));
         delay.play();
     }
 
@@ -172,6 +211,49 @@ public class LoginController {
         return null;
     }
 
+    /** Показує панель введення коду підтвердження замість панелі реєстрації. */
+    private void showVerifyPanel() {
+        if (panelVerify == null) return;
+        switchPanel(panelRegister, panelVerify);
+        if (verifyCodeField != null) verifyCodeField.requestFocus();
+    }
+
+    /** Обробляє натискання кнопки "Підтвердити" на панелі верифікації. */
+    @FXML private void onVerifyCode() {
+        String code = verifyCodeField != null ? verifyCodeField.getText().trim() : "";
+        if (code.isBlank()) {
+            setVerifyHint("❌ Введіть код з листа", "#c03030"); return;
+        }
+        try {
+            ClientRepository clientRepo = SpringContext.getBean(ClientRepository.class);
+            boolean ok = clientRepo.verifyEmail(code);
+            if (!ok) {
+                setVerifyHint("❌ Невірний або вже використаний код", "#c03030"); return;
+            }
+        } catch (Exception ex) {
+            setVerifyHint("❌ Помилка: " + ex.getMessage(), "#c03030"); return;
+        }
+        setVerifyHint("✅ Email підтверджено! Входимо...", "#639922");
+        PauseTransition delay = new PauseTransition(Duration.millis(800));
+        delay.setOnFinished(e -> Platform.runLater(() -> openMainApp(pendingVerifyEmail, UserRole.CLIENT)));
+        delay.play();
+    }
+
+    private void setVerifyHint(String msg, String color) {
+        if (verifyHint == null) return;
+        verifyHint.setText(msg);
+        verifyHint.setStyle("-fx-text-fill: " + color + ";");
+        verifyHint.setVisible(true);
+        verifyHint.setManaged(true);
+    }
+
+    /** Генерує 6-значний цифровий токен підтвердження. */
+    private static String generateVerifyToken() {
+        SecureRandom rng = new SecureRandom();
+        int code = 100_000 + rng.nextInt(900_000); // 100000–999999
+        return String.valueOf(code);
+    }
+
     /** SHA-256 хеш пароля (hex) */
     private static String hashPassword(String password) {
         try {
@@ -187,16 +269,23 @@ public class LoginController {
 
     private void openMainApp(String email, UserRole role) {
         try {
+             
+            ProfilePanelController.SessionState.setLastLoginTime(java.time.LocalDateTime.now());
+
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/ui/MainLayout.fxml"));
-            Scene scene = new Scene(loader.load(), 1400, 900);
+            javafx.geometry.Rectangle2D screen =
+                  javafx.stage.Screen.getPrimary().getVisualBounds();
+            double winW = Math.min(1400, screen.getWidth()  * 0.85);
+            double winH = Math.min(900,  screen.getHeight() * 0.85);
+            Scene scene = new Scene(loader.load(), winW, winH);
             scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
             MainController ctrl = loader.getController();
             scene.setUserData(ctrl);
             ctrl.setUser(email, role);
             stage.setScene(scene);
             stage.setTitle("AYVO — " + role.getDisplayName());
-            stage.setMinWidth(1100);
-            stage.setMinHeight(700);
+            stage.setMinWidth(900);
+            stage.setMinHeight(600);
             stage.setResizable(true);
             stage.centerOnScreen();
         } catch (Exception ex) {
@@ -210,7 +299,7 @@ public class LoginController {
     }
 
     private static boolean isValidPhone(String phone) {
-        // Дозволяємо +38 0XX XXX XX XX або просто 0XXXXXXXXX, з пробілами/дефісами
+         
         String digits = phone.replaceAll("[\\s\\-()]", "");
         return digits.matches("^(\\+?380?|0)\\d{9}$") || digits.matches("^\\+?\\d{10,15}$");
     }

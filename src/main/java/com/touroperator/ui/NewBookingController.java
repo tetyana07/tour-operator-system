@@ -25,12 +25,17 @@ public class NewBookingController {
     @FXML private Spinner<Integer>    childSpinner;
     @FXML private TextField           promoField;
 
-    // Нові комбобокси
+     
     @FXML private ComboBox<Hotel>     hotelCombo;
     @FXML private ComboBox<Transfer>  transferCombo;
     @FXML private ComboBox<Insurance> insuranceCombo;
     @FXML private ComboBox<Excursion> excursionCombo;
     @FXML private ComboBox<String>    discountCombo;
+
+     
+    @FXML private Label badgeEarly;
+    @FXML private Label badgeChild;
+    @FXML private Label badgeGroup;
 
     @FXML private Label baseLine;
     @FXML private Label basePrice;
@@ -70,7 +75,7 @@ public class NewBookingController {
             transferRepo   = SpringContext.getBean(TransferRepository.class);
             excursionRepo  = SpringContext.getBean(ExcursionRepository.class);
 
-            // ── Клієнти ─────────────────────────────────────────────────────
+             
             List<Client> clients = clientService.findAll();
             clientCombo.setItems(FXCollections.observableArrayList(clients));
             clientCombo.setConverter(new javafx.util.StringConverter<>() {
@@ -79,7 +84,7 @@ public class NewBookingController {
             });
             if (!clients.isEmpty()) clientCombo.getSelectionModel().selectFirst();
 
-            // ── Тури ────────────────────────────────────────────────────────
+             
             List<Tour> tours = tourService.findAll();
             tourCombo.setItems(FXCollections.observableArrayList(tours));
             tourCombo.setConverter(new javafx.util.StringConverter<>() {
@@ -90,17 +95,17 @@ public class NewBookingController {
             });
             if (!tours.isEmpty()) tourCombo.getSelectionModel().selectFirst();
 
-            // ── Спінери ─────────────────────────────────────────────────────
+             
             paxSpinner.setValueFactory(
                   new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 30, 2));
             if (childSpinner != null)
                 childSpinner.setValueFactory(
                       new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 10, 0));
 
-            // ── Страховка ────────────────────────────────────────────────────
+             
             if (insuranceCombo != null) {
                 List<Insurance> ins = insuranceRepo.findAll();
-                // Додаємо "Без страховки" як перший елемент
+                 
                 insuranceCombo.setConverter(new javafx.util.StringConverter<>() {
                     public String toString(Insurance i) {
                         return i != null ? i.getName() + " (+₴" + String.format("%,.0f", i.getPrice()) + ")" : "Без страховки";
@@ -114,7 +119,7 @@ public class NewBookingController {
                 insuranceCombo.getSelectionModel().selectFirst();
             }
 
-            // ── Трансфер ─────────────────────────────────────────────────────
+             
             if (transferCombo != null) {
                 List<Transfer> transfers = transferRepo.findAll();
                 transferCombo.setConverter(new javafx.util.StringConverter<>() {
@@ -130,14 +135,14 @@ public class NewBookingController {
                 transferCombo.getSelectionModel().selectFirst();
             }
 
-            // ── Тип знижки (інфо-поле) ───────────────────────────────────────
+             
             if (discountCombo != null) {
                 discountCombo.setItems(FXCollections.observableArrayList(
-                      "Без додаткової знижки", "Пенсіонер (-10%)", "Корпоратив (-15%)", "Ювілей (-20%)"));
+                      "Без спеціальної знижки", "Корпоратив (-15%)", "Ювілей (-20%)"));
                 discountCombo.getSelectionModel().selectFirst();
             }
 
-            // ── Слухачі для перерахунку ───────────────────────────────────────
+             
             paxSpinner.valueProperty().addListener((o, ov, nv) -> updateTotal());
             if (childSpinner != null)
                 childSpinner.valueProperty().addListener((o, ov, nv) -> updateTotal());
@@ -149,10 +154,10 @@ public class NewBookingController {
             if (excursionCombo != null)
                 excursionCombo.valueProperty().addListener((o, ov, nv) -> updateTotal());
 
-            // Ініціалізуємо дані для першого туру
+             
             onTourChanged();
 
-            // Оновлюємо розрахунок при зміні валюти
+             
             ProfilePanelController.CurrencySession.addListener(
                   () -> javafx.application.Platform.runLater(this::updateTotal)
             );
@@ -168,7 +173,7 @@ public class NewBookingController {
         Tour tour = tourCombo != null ? tourCombo.getValue() : null;
         if (tour == null) return;
 
-        // Готель туру
+         
         if (hotelCombo != null) {
             hotelCombo.getItems().clear();
             if (tour.getHotelId() != null) {
@@ -189,7 +194,7 @@ public class NewBookingController {
                     public String toString(Hotel h) { return h != null ? h.getName() : "Готель не призначено"; }
                     public Hotel fromString(String s) { return null; }
                 });
-                // Завантажити всі готелі якщо тур без готелю
+                 
                 List<Hotel> hotels = hotelRepo.findAll();
                 List<Hotel> hotelsWithNull = new ArrayList<>();
                 hotelsWithNull.add(null);
@@ -199,7 +204,7 @@ public class NewBookingController {
             }
         }
 
-        // Екскурсії для цього туру
+         
         if (excursionCombo != null) {
             List<Excursion> excursions = excursionRepo.findByTourId(tour.getId());
             excursionCombo.setConverter(new javafx.util.StringConverter<>() {
@@ -249,22 +254,63 @@ public class NewBookingController {
         String promoCode = promoField != null ? promoField.getText().trim() : null;
         if (promoCode != null && promoCode.isBlank()) promoCode = null;
 
-        // Баг 1 виправлено: зчитуємо вибраний тип знижки з discountCombo
+         
         int extraDiscount = parseExtraDiscountPercent(
               discountCombo != null ? discountCombo.getValue() : null);
 
         try {
-            // Баг 1 виправлено: передаємо extraDiscount у PricingService
+             
             var breakdown = pricingService.calculate(tour, total, child, excIds, insId, trId, promoCode, extraDiscount);
 
+            updateDiscountBadges(tour, child, total);
+
             if (baseLine   != null) baseLine.setText("Базова ціна × " + total);
-            // Баг 2 виправлено: basePrice ← getBasePrice(), discountLine ← getTotalDiscount(), totalPrice ← getFinalPrice()
+             
             if (basePrice   != null) basePrice.setText(fmt(breakdown.getBasePrice()));
             if (discountLine != null) discountLine.setText("−" + fmt(breakdown.getTotalDiscount()));
             if (totalPrice   != null) totalPrice.setText(fmt(breakdown.getFinalPrice()));
             if (dynamicLabel != null) dynamicLabel.setVisible(breakdown.hasDynamicSurcharge());
         } catch (Exception e) {
             if (totalPrice != null) totalPrice.setText("Помилка розрахунку");
+        }
+    }
+
+    /**
+     * Оновлює стан бейджів автоматичних знижок:
+     * активна (зелена) або неактивна (сіра).
+     */
+    private void updateDiscountBadges(Tour tour, int childCount, int touristCount) {
+         
+        if (badgeEarly != null) {
+            boolean earlyActive = tour.getStartDate() != null &&
+                  java.time.temporal.ChronoUnit.DAYS.between(
+                        java.time.LocalDate.now(), tour.getStartDate()) >= 30;
+            setBadgeActive(badgeEarly, "⏰ Раннє бронювання −10%", earlyActive);
+        }
+         
+        if (badgeChild != null) {
+            setBadgeActive(badgeChild, "👶 Дитяча знижка −30%", childCount > 0);
+        }
+         
+        if (badgeGroup != null) {
+            setBadgeActive(badgeGroup, "👥 Групова −7%", touristCount >= 5);
+        }
+    }
+
+    /** Встановлює активний (зелений) або неактивний (сірий) стиль бейджу. */
+    private void setBadgeActive(Label badge, String text, boolean active) {
+        badge.setText(text + (active ? " ✓" : ""));
+        if (active) {
+            badge.setStyle(
+                  "-fx-background-color:#d4f0c0; -fx-background-radius:20;" +
+                        "-fx-border-color:#5a9a2a; -fx-border-radius:20;" +
+                        "-fx-padding:5 12; -fx-font-size:11px; -fx-text-fill:#2a6a0a;" +
+                        "-fx-font-weight:bold;");
+        } else {
+            badge.setStyle(
+                  "-fx-background-color:#f0f0f0; -fx-background-radius:20;" +
+                        "-fx-border-color:#c8c8c8; -fx-border-radius:20;" +
+                        "-fx-padding:5 12; -fx-font-size:11px; -fx-text-fill:#a0a0a0;");
         }
     }
 
@@ -279,13 +325,18 @@ public class NewBookingController {
         return 0;
     }
 
+    /** Повертає вікно цього діалогу — для передачі у VoyaAlert як owner */
+    private javafx.stage.Window myWindow() {
+        try { return clientCombo.getScene().getWindow(); } catch (Exception e) { return null; }
+    }
+
     @FXML
     private void onSaveBooking() {
         Client client = clientCombo != null ? clientCombo.getValue() : null;
         Tour tour     = tourCombo  != null ? tourCombo.getValue()  : null;
 
         if (client == null || tour == null) {
-            VoyaAlert.warning("Оберіть клієнта та тур");
+            VoyaAlert.warning("Оберіть клієнта та тур", myWindow());
             return;
         }
 
@@ -293,19 +344,19 @@ public class NewBookingController {
         int child = childSpinner != null && childSpinner.getValue() != null ? childSpinner.getValue() : 0;
         String promoCode = promoField != null ? promoField.getText().trim() : "";
 
-        // Збираємо ID екскурсій
+         
         List<UUID> excursionIds = new ArrayList<>();
         if (excursionCombo != null && excursionCombo.getValue() != null) {
             excursionIds.add(excursionCombo.getValue().getId());
         }
 
-        // ID страховки і трансферу
+         
         UUID insuranceId = (insuranceCombo != null && insuranceCombo.getValue() != null)
               ? insuranceCombo.getValue().getId() : null;
         UUID transferId  = (transferCombo  != null && transferCombo.getValue()  != null)
               ? transferCombo.getValue().getId()  : null;
 
-        // Баг 1 виправлено: зчитуємо тип знижки і додаємо до запиту
+         
         int extraDiscount = parseExtraDiscountPercent(
               discountCombo != null ? discountCombo.getValue() : null);
 
@@ -319,11 +370,11 @@ public class NewBookingController {
 
         try {
             var booking = bookingService.createBooking(req);
-            VoyaAlert.success("Бронювання створено!\nСума: " + fmt(booking.getTotalPrice()));
+            VoyaAlert.success("Бронювання створено!\nСума: " + fmt(booking.getTotalPrice()), myWindow());
             if (onSavedCallback != null) onSavedCallback.run();
             onClose();
         } catch (Exception e) {
-            VoyaAlert.error(e.getMessage());
+            VoyaAlert.error(e.getMessage(), myWindow());
         }
     }
 
@@ -337,13 +388,13 @@ public class NewBookingController {
                   tourCombo.getSelectionModel().select(t);
                   onTourChanged();
               });
-        // Оновлюємо бейдж у хедері
+         
         if (tourBadge != null) {
             tourBadge.setText("📍 " + tour.getName() + "  ·  " + tour.getCountry());
             tourBadge.setVisible(true);
             tourBadge.setManaged(true);
         }
-        // Ховаємо секцію вибору туру — він вже обраний
+         
         if (tourSection != null) {
             tourSection.setVisible(false);
             tourSection.setManaged(false);
@@ -356,15 +407,15 @@ public class NewBookingController {
      */
     public void setClientContext(UserRole role, String email) {
         if (role == UserRole.ADMIN) {
-            // Адмін — показуємо секцію вибору клієнта
+             
             if (clientSection != null) {
                 clientSection.setVisible(true);
                 clientSection.setManaged(true);
             }
-            // clientCombo вже заповнений у initialize() — нічого більше не треба
+             
             return;
         }
-        // Клієнт — автоматично обираємо його і ховаємо секцію
+         
         if (email == null || email.isBlank()) return;
         try {
             com.touroperator.repository.ClientRepository clientRepo =

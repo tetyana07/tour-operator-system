@@ -6,6 +6,7 @@ import com.touroperator.config.SpringContext;
 import com.touroperator.domain.Booking;
 import com.touroperator.domain.Client;
 import com.touroperator.domain.Tour;
+import com.touroperator.service.BookingAuditService;
 import com.touroperator.service.BookingService;
 import com.touroperator.service.ClientService;
 import com.touroperator.service.QuotaService;
@@ -18,7 +19,10 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.net.URI;
+import java.awt.Desktop;
 
 public class BookingsController implements RoleAware {
 
@@ -44,9 +48,16 @@ public class BookingsController implements RoleAware {
     @FXML private Button btnConfirm;
     @FXML private Button btnComplete;
     @FXML private Button btnCancel;
+    @FXML private Button btnUndo;
+    @FXML private Button btnRedo;
     @FXML private HBox   adminActionBar;
 
-    // Клієнтський вигляд — картки
+     
+    @FXML private javafx.scene.layout.VBox auditPanel;
+    @FXML private Label                    auditTitle;
+    @FXML private javafx.scene.layout.VBox auditTimeline;
+
+     
     @FXML private javafx.scene.layout.VBox adminView;
     @FXML private javafx.scene.layout.VBox clientView;
     @FXML private javafx.scene.layout.VBox clientCardsContainer;
@@ -62,6 +73,7 @@ public class BookingsController implements RoleAware {
     private ClientService  clientService;
     private TourService    tourService;
     private QuotaService   quotaService;
+    private BookingAuditService auditService;
     private ObservableList<Booking> allBookings;
     private final Map<UUID, Client> clientCache = new HashMap<>();
     private final Map<UUID, Tour>   tourCache   = new HashMap<>();
@@ -83,7 +95,7 @@ public class BookingsController implements RoleAware {
         }
         if (btnNewBooking != null) { btnNewBooking.setVisible(isAdmin); btnNewBooking.setManaged(isAdmin); }
 
-        // Перемикаємо вигляд
+         
         if (adminView  != null) { adminView.setVisible(isAdmin);   adminView.setManaged(isAdmin); }
         if (clientView != null) { clientView.setVisible(!isAdmin); clientView.setManaged(!isAdmin); }
 
@@ -103,10 +115,11 @@ public class BookingsController implements RoleAware {
             clientService  = SpringContext.getBean(ClientService.class);
             tourService    = SpringContext.getBean(TourService.class);
             quotaService   = SpringContext.getBean(QuotaService.class);
+            auditService   = SpringContext.getBean(BookingAuditService.class);
             clientService.findAll().forEach(c -> clientCache.put(c.getId(), c));
             tourService.findAll().forEach(t -> tourCache.put(t.getId(), t));
 
-            // #3 — реєструємо слухача квот (Observer)
+             
             quotaService.addListener(new QuotaService.QuotaListener() {
                 @Override
                 public void onQuotaChanged(Tour tour, int remaining) {
@@ -129,17 +142,39 @@ public class BookingsController implements RoleAware {
             setupSelectionListener();
             loadData();
 
-            // Оновлення валюти в реальному часі
+             
+            var cm = getCommandManager();
+            if (btnUndo != null) {
+                btnUndo.disableProperty().bind(cm.canUndoProperty().not());
+                cm.undoLabelProperty().addListener((obs, o, n) -> {
+                    if (btnUndo != null) btnUndo.setText(n.isEmpty() ? "↩ Скасувати дію" : "↩ " + n);
+                });
+            }
+            if (btnRedo != null) {
+                btnRedo.disableProperty().bind(cm.canRedoProperty().not());
+                cm.redoLabelProperty().addListener((obs, o, n) -> {
+                    if (btnRedo != null) btnRedo.setText(n.isEmpty() ? "↪ Повторити" : "↪ " + n);
+                });
+            }
+
+             
             ProfilePanelController.CurrencySession.addListener(this::loadData);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // ── Слухач вибору рядка — оновлює кнопки дій ────────────────────────
+     
     private void setupSelectionListener() {
         bookingsTable.getSelectionModel().selectedItemProperty().addListener(
-              (obs, oldVal, newVal) -> updateActionButtons(newVal));
+              (obs, oldVal, newVal) -> {
+                  updateActionButtons(newVal);
+                  if (newVal != null && currentRole == UserRole.ADMIN) {
+                      showAuditPanel(newVal);
+                  } else {
+                      hideAuditPanel();
+                  }
+              });
         updateActionButtons(null);
     }
 
@@ -153,12 +188,12 @@ public class BookingsController implements RoleAware {
      */
     private void updateActionButtons(Booking b) {
         String status = b != null ? b.getStatus() : "";
-        boolean hasNew       = "NEW".equals(status) || "CREATED".equals(status);
+        boolean hasCreated   = "CREATED".equals(status);
         boolean hasConfirmed = "CONFIRMED".equals(status);
         boolean hasPaid      = "PAID".equals(status);
-        boolean canCancel    = hasNew || hasConfirmed;
+        boolean canCancel    = hasCreated || hasConfirmed;
 
-        setBtn(btnConfirm,  hasNew);
+        setBtn(btnConfirm,  hasCreated);
         setBtn(btnComplete, hasPaid);
         setBtn(btnCancel,   canCancel);
     }
@@ -169,10 +204,10 @@ public class BookingsController implements RoleAware {
         btn.setOpacity(active ? 1.0 : 0.4);
     }
 
-    // ── Фільтри ──────────────────────────────────────────────────────────
+     
     private void setupFilters() {
         statusFilter.setItems(FXCollections.observableArrayList(
-              "Всі статуси","CREATED","NEW","CONFIRMED","PAID","COMPLETED","CANCELLED"));
+              "Всі статуси","CREATED","CONFIRMED","PAID","COMPLETED","CANCELLED"));
         statusFilter.getSelectionModel().selectFirst();
         List<String> names = new ArrayList<>();
         names.add("Всі тури");
@@ -181,13 +216,13 @@ public class BookingsController implements RoleAware {
         tourFilter.getSelectionModel().selectFirst();
     }
 
-    // ── Колонки ──────────────────────────────────────────────────────────
+     
     private void setupColumns() {
-        // Збираємо всі бронювання для формування номерів BK-XXXX
+         
         colId.setCellValueFactory(c -> {
-            // Показуємо скорочений UUID як hex-індекс
+             
             String id = c.getValue().getId().toString();
-            // Беремо перші 4 hex-цифри і форматуємо як BK-XXXX
+             
             String shortHex = id.replace("-","").substring(0,4).toUpperCase();
             return new SimpleStringProperty("BK-" + shortHex);
         });
@@ -207,7 +242,7 @@ public class BookingsController implements RoleAware {
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) { setGraphic(null); setText(null); return; }
-                // Аватар + ім'я як у Image 1
+                 
                 String initials = getInitials(item);
                 javafx.scene.layout.HBox box = new javafx.scene.layout.HBox(10);
                 box.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
@@ -295,41 +330,30 @@ public class BookingsController implements RoleAware {
         };
     }
 
-    // ── Завантаження даних ───────────────────────────────────────────────
+     
     private void loadData() {
-        List<Booking> bookings;
-        if (currentRole == UserRole.CLIENT && currentEmail != null && !currentEmail.isBlank()) {
-            // Клієнт бачить лише свої бронювання
-            try {
-                com.touroperator.repository.ClientRepository clientRepo =
-                      SpringContext.getBean(com.touroperator.repository.ClientRepository.class);
-                com.touroperator.repository.BookingRepository bookingRepo =
-                      SpringContext.getBean(com.touroperator.repository.BookingRepository.class);
-                java.util.Optional<com.touroperator.domain.Client> clientOpt =
-                      clientRepo.findByEmail(currentEmail);
-                if (clientOpt.isPresent()) {
-                    bookings = bookingRepo.findByClientId(clientOpt.get().getId());
-                } else {
-                    bookings = java.util.Collections.emptyList();
-                }
-            } catch (Exception e) {
-                bookings = java.util.Collections.emptyList();
-            }
-        } else {
-            try {
-                bookings = bookingService.findAll();
-            } catch (Exception e) {
-                e.printStackTrace();
-                bookings = java.util.Collections.emptyList();
-            }
-        }
-        allBookings = FXCollections.observableArrayList(bookings);
-        bookingsTable.setItems(allBookings);
-        updateStats();
-        updateActionButtons(null);
-        bookingsTable.getSelectionModel().clearSelection();
-        // Для клієнта — будуємо картки
-        if (currentRole == UserRole.CLIENT) buildClientCards();
+        com.touroperator.ui.util.AsyncDataLoader.load(
+              () -> {
+                   
+                  if (currentRole == UserRole.CLIENT && currentEmail != null && !currentEmail.isBlank()) {
+                       
+                      return bookingService.findByClientEmail(currentEmail);
+                  } else {
+                      return bookingService.findAll();
+                  }
+              },
+              bookings -> {
+                   
+                  allBookings = FXCollections.observableArrayList(bookings);
+                  bookingsTable.setItems(allBookings);
+                  updateStats();
+                  updateActionButtons(null);
+                  bookingsTable.getSelectionModel().clearSelection();
+                   
+                  if (currentRole == UserRole.CLIENT) buildClientCards();
+              },
+              errorMsg -> VoyaAlert.error(errorMsg)
+        );
     }
 
     /** Будує картки бронювань для клієнта */
@@ -357,20 +381,20 @@ public class BookingsController implements RoleAware {
             String cost = ProfilePanelController.CurrencySession.format(
                   b.getTotalPrice() != null ? b.getTotalPrice() : java.math.BigDecimal.ZERO);
 
-            // Визначаємо колір статусу
+             
             String statusText  = statusLabel(b.getStatus());
             String statusColor = statusColor(b.getStatus());
-            boolean canCancel = "NEW".equals(b.getStatus()) || "CONFIRMED".equals(b.getStatus()) || "CREATED".equals(b.getStatus());
+            boolean canCancel = "CREATED".equals(b.getStatus()) || "CONFIRMED".equals(b.getStatus());
             boolean canPay    = "CONFIRMED".equals(b.getStatus());
             boolean canRefund = "PAID".equals(b.getStatus());
 
-            // Картка
+             
             javafx.scene.layout.VBox card = new javafx.scene.layout.VBox(10);
             card.setStyle("-fx-background-color:white; -fx-background-radius:16;" +
                   "-fx-border-color:#e8f0e0; -fx-border-radius:16;" +
                   "-fx-padding:18 20; -fx-effect:dropshadow(gaussian,rgba(0,0,0,0.06),8,0,0,2);");
 
-            // Рядок 1: назва туру + статус
+             
             javafx.scene.layout.HBox row1 = new javafx.scene.layout.HBox(10);
             row1.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
             Label nameLbl = new Label("✈  " + tourName);
@@ -382,7 +406,7 @@ public class BookingsController implements RoleAware {
                   "-fx-padding:3 10; -fx-font-size:11px; -fx-font-weight:bold;");
             row1.getChildren().addAll(nameLbl, statusLbl);
 
-            // Рядок 2: дати + туристи + вартість
+             
             javafx.scene.layout.HBox row2 = new javafx.scene.layout.HBox(20);
             row2.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
             Label datesLbl = new Label("📅 " + dates);
@@ -394,7 +418,7 @@ public class BookingsController implements RoleAware {
             costLbl.setStyle("-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#2d6b1a;");
             row2.getChildren().addAll(datesLbl, paxLbl, costLbl);
 
-            // Рядок 3: номер + кнопки дій
+             
             javafx.scene.layout.HBox row3 = new javafx.scene.layout.HBox(10);
             row3.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
             Label idLbl = new Label("№ " + b.getId().toString().substring(0, 8).toUpperCase());
@@ -402,25 +426,27 @@ public class BookingsController implements RoleAware {
             javafx.scene.layout.HBox.setHgrow(idLbl, javafx.scene.layout.Priority.ALWAYS);
 
             if (canPay) {
-                // CONFIRMED: кнопка "Оплатити" (зелена) + кнопка "Скасувати" (червона)
-                Button payBtn = new Button("💳  Оплатити");
-                payBtn.setStyle("-fx-background-color:#27500a; -fx-text-fill:#eaf3de;" +
-                      "-fx-border-radius:8; -fx-background-radius:8;" +
+                 
+                Button liqpayBtn = new Button("🔗  Сплатити через LiqPay");
+                liqpayBtn.setStyle("-fx-background-color: linear-gradient(to right,#1a5276,#2e86c1);" +
+                      "-fx-text-fill:white; -fx-border-radius:8; -fx-background-radius:8;" +
                       "-fx-font-size:12px; -fx-font-weight:bold; -fx-padding:5 16; -fx-cursor:hand;");
-                payBtn.setOnMouseEntered(e -> payBtn.setStyle("-fx-background-color:#173404; -fx-text-fill:#eaf3de;" +
-                      "-fx-border-radius:8; -fx-background-radius:8;" +
-                      "-fx-font-size:12px; -fx-font-weight:bold; -fx-padding:5 16; -fx-cursor:hand;"));
-                payBtn.setOnMouseExited(e -> payBtn.setStyle("-fx-background-color:#27500a; -fx-text-fill:#eaf3de;" +
-                      "-fx-border-radius:8; -fx-background-radius:8;" +
-                      "-fx-font-size:12px; -fx-font-weight:bold; -fx-padding:5 16; -fx-cursor:hand;"));
-                payBtn.setOnAction(e -> onClientPay(b));
+                liqpayBtn.setOnMouseEntered(ev -> liqpayBtn.setStyle(
+                      "-fx-background-color: linear-gradient(to right,#154060,#1a5a90);" +
+                            "-fx-text-fill:white; -fx-border-radius:8; -fx-background-radius:8;" +
+                            "-fx-font-size:12px; -fx-font-weight:bold; -fx-padding:5 16; -fx-cursor:hand;"));
+                liqpayBtn.setOnMouseExited(ev -> liqpayBtn.setStyle(
+                      "-fx-background-color: linear-gradient(to right,#1a5276,#2e86c1);" +
+                            "-fx-text-fill:white; -fx-border-radius:8; -fx-background-radius:8;" +
+                            "-fx-font-size:12px; -fx-font-weight:bold; -fx-padding:5 16; -fx-cursor:hand;"));
+                liqpayBtn.setOnAction(e -> onClientPayLiqPay(b));
 
                 Button cancelBtn = new Button("✕  Скасувати");
                 cancelBtn.setStyle("-fx-background-color:transparent; -fx-border-color:#e05050;" +
                       "-fx-border-radius:8; -fx-background-radius:8;" +
                       "-fx-text-fill:#e05050; -fx-font-size:12px; -fx-padding:5 14; -fx-cursor:hand;");
                 cancelBtn.setOnAction(e -> onClientCancelBooking(b));
-                row3.getChildren().addAll(idLbl, cancelBtn, payBtn);
+                row3.getChildren().addAll(idLbl, cancelBtn, liqpayBtn);
 
             } else if (canCancel) {
                 Button cancelBtn = new Button("✕  Скасувати");
@@ -444,8 +470,7 @@ public class BookingsController implements RoleAware {
             clientCardsContainer.getChildren().add(card);
         }
 
-        // ── Рекомендації турів ─────────────────────────────────────────────
-        buildTourRecommendations();
+         
     }
 
     /**
@@ -456,7 +481,7 @@ public class BookingsController implements RoleAware {
     private void buildTourRecommendations() {
         if (clientCardsContainer == null) return;
 
-        // Збираємо ID вже заброньованих турів цього клієнта
+         
         java.util.Set<UUID> bookedTourIds = allBookings.stream()
               .map(Booking::getTourId)
               .collect(java.util.stream.Collectors.toSet());
@@ -472,7 +497,7 @@ public class BookingsController implements RoleAware {
 
         if (recommended.isEmpty()) return;
 
-        // Заголовок секції
+         
         javafx.scene.layout.VBox section = new javafx.scene.layout.VBox(12);
         section.setStyle("-fx-padding:20 0 0 0;");
 
@@ -502,7 +527,7 @@ public class BookingsController implements RoleAware {
               "-fx-padding:16 18; -fx-effect:dropshadow(gaussian,rgba(0,0,0,0.04),6,0,0,2);" +
               "-fx-cursor:default;");
 
-        // Рядок 1: назва + ціна
+         
         javafx.scene.layout.HBox row1 = new javafx.scene.layout.HBox(8);
         row1.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
@@ -523,7 +548,7 @@ public class BookingsController implements RoleAware {
 
         row1.getChildren().addAll(flag, nameBox, priceLbl);
 
-        // Рядок 2: дати + місця + бейдж "популярне"
+         
         javafx.scene.layout.HBox row2 = new javafx.scene.layout.HBox(14);
         row2.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
@@ -538,7 +563,7 @@ public class BookingsController implements RoleAware {
               (seats <= 3 ? "#c05000" : "#4a6a3a") + ";");
         javafx.scene.layout.HBox.setHgrow(seatsLbl, javafx.scene.layout.Priority.ALWAYS);
 
-        // Бейдж
+         
         String badge = tour.getFillRate() >= 0.8 ? "🔥 Популярне"
               : tour.getFillRate() >= 0.5 ? "⭐ Рекомендовано"
                     : "✨ Новинка";
@@ -549,7 +574,7 @@ public class BookingsController implements RoleAware {
 
         row2.getChildren().addAll(datesLbl, seatsLbl, badgeLbl);
 
-        // Кнопка "Забронювати"
+         
         javafx.scene.layout.HBox row3 = new javafx.scene.layout.HBox();
         row3.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
         Button bookBtn = new Button("Забронювати →");
@@ -560,7 +585,7 @@ public class BookingsController implements RoleAware {
               " -fx-background-radius:10; -fx-padding:6 18; -fx-font-size:12px; -fx-font-weight:bold; -fx-cursor:hand;"));
         bookBtn.setOnMouseExited(e -> bookBtn.setStyle("-fx-background-color:#27500a; -fx-text-fill:#eaf3de;" +
               " -fx-background-radius:10; -fx-padding:6 18; -fx-font-size:12px; -fx-font-weight:bold; -fx-cursor:hand;"));
-        // Відкриваємо новий діалог бронювання з передвибраним туром
+         
         bookBtn.setOnAction(e -> openNewBookingForTour(tour));
         row3.getChildren().add(bookBtn);
 
@@ -593,25 +618,9 @@ public class BookingsController implements RoleAware {
         }
     }
 
-    /** Прапорець країни за назвою (базовий набір) */
+    /** Прапорець країни — делегуємо до UiUtils */
     private static String countryFlag(String country) {
-        if (country == null) return "🌍";
-        return switch (country.toLowerCase()) {
-            case "туреччина", "turkey"      -> "🇹🇷";
-            case "єгипет", "egypt"          -> "🇪🇬";
-            case "іспанія", "spain"         -> "🇪🇸";
-            case "греція", "greece"         -> "🇬🇷";
-            case "italy", "італія"          -> "🇮🇹";
-            case "france", "франція"        -> "🇫🇷";
-            case "thailand", "таїланд"      -> "🇹🇭";
-            case "croatia", "хорватія"      -> "🇭🇷";
-            case "maldives", "мальдіви"     -> "🇲🇻";
-            case "czech republic", "чехія"  -> "🇨🇿";
-            case "austria", "австрія"       -> "🇦🇹";
-            case "germany", "німеччина"     -> "🇩🇪";
-            case "ukraine", "україна"       -> "🇺🇦";
-            default -> "🌍";
-        };
+        return UiUtils.countryFlag(country);
     }
 
     /** Клієнт скасовує своє бронювання */
@@ -678,6 +687,92 @@ public class BookingsController implements RoleAware {
         );
     }
 
+    /** Клієнт оплачує підтверджене бронювання через LiqPay */
+    private void onClientPayLiqPay(Booking booking) {
+        Tour tour = tourCache.get(booking.getTourId());
+        String tourName = tour != null ? tour.getName() : "тур";
+        java.math.BigDecimal amount = booking.getTotalPrice();
+        if (amount == null || amount.compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            VoyaAlert.error("Сума бронювання некоректна");
+            return;
+        }
+        try {
+            com.touroperator.service.LiqPayService liqPay =
+                  com.touroperator.config.SpringContext.getBean(com.touroperator.service.LiqPayService.class);
+            String orderId = booking.getId().toString().replace("-", "");
+            String description = "AYVO · Тур «" + tourName + "»";
+            String url = liqPay.generatePaymentUrl(amount, "USD", description, orderId);
+            java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+
+             
+            com.touroperator.repository.PaymentRepository payRepo =
+                  com.touroperator.config.SpringContext.getBean(com.touroperator.repository.PaymentRepository.class);
+            com.touroperator.repository.BookingRepository bookRepo =
+                  com.touroperator.config.SpringContext.getBean(com.touroperator.repository.BookingRepository.class);
+            boolean hasPayment = payRepo.findByBookingId(booking.getId()).isPresent();
+            if (hasPayment) {
+                payRepo.confirmByBookingId(booking.getId());
+            } else {
+                com.touroperator.service.PaymentService payService =
+                      com.touroperator.config.SpringContext.getBean(com.touroperator.service.PaymentService.class);
+                payService.pay(booking.getId(), "LIQPAY");
+            }
+            bookRepo.markPaid(booking.getId());
+
+             
+            loadData();
+            try {
+                Object ud = bookingsTable != null
+                      ? bookingsTable.getScene().getUserData()
+                      : null;
+                if (ud instanceof MainController mc) {
+                    mc.invalidatePage("payments");
+                    mc.invalidatePage("dashboard");
+                }
+            } catch (Exception ignored) {}
+
+            javafx.application.Platform.runLater(() ->
+                  VoyaAlert.success(
+                        "✅ Оплату через LiqPay прийнято!\nСтатус бронювання: Сплачено."));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            VoyaAlert.error("Помилка LiqPay: " + ex.getMessage());
+        }
+    }
+
+
+
+    private void startLiqPayPolling(java.util.UUID bookingId) {
+        java.util.concurrent.ScheduledExecutorService scheduler =
+              java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+                  Thread t = new Thread(r, "liqpay-poll");
+                  t.setDaemon(true);
+                  return t;
+              });
+        final int[] attempts = {0};
+        final int maxAttempts = 60;
+        scheduler.scheduleAtFixedRate(() -> {
+            attempts[0]++;
+            try {
+                com.touroperator.repository.BookingRepository bRepo =
+                      com.touroperator.config.SpringContext.getBean(com.touroperator.repository.BookingRepository.class);
+                com.touroperator.domain.Booking b = bRepo.findById(bookingId).orElse(null);
+                boolean paid = b != null && "PAID".equals(b.getStatus());
+                if (paid || attempts[0] >= maxAttempts) {
+                    scheduler.shutdown();
+                    if (paid) {
+                        javafx.application.Platform.runLater(() -> {
+                            loadData();
+                            VoyaAlert.success("✅ Оплату через LiqPay підтверджено!");
+                        });
+                    }
+                }
+            } catch (Exception ignored) {
+                if (attempts[0] >= maxAttempts) scheduler.shutdown();
+            }
+        }, 5, 5, java.util.concurrent.TimeUnit.SECONDS);
+    }
+
     private boolean applyCurrentFilter(Booking b) {
         String f = statusFilter != null ? statusFilter.getValue() : null;
         if (f == null || f.equals("Всі статуси") || f.equals("Всі статуси")) return true;
@@ -687,7 +782,7 @@ public class BookingsController implements RoleAware {
     private String statusLabel(String s) {
         if (s == null) return "Невідомо";
         return switch (s) {
-            case "NEW"       -> "Нове";
+            case "CREATED"   -> "Нове";
             case "CONFIRMED" -> "Підтверджено";
             case "PAID"      -> "Сплачено";
             case "COMPLETED" -> "Завершено";
@@ -730,7 +825,7 @@ public class BookingsController implements RoleAware {
         if (statCancelled != null) statCancelled.setText(String.valueOf(cancelled));
     }
 
-    // ── FXML actions ─────────────────────────────────────────────────────
+     
 
     @FXML private void onNewBooking() {
         try {
@@ -783,37 +878,148 @@ public class BookingsController implements RoleAware {
         bookingsTable.setItems(filtered);
     }
 
-    // ── Підтвердити (NEW → CONFIRMED) ────────────────────────────────────
+     
+    private com.touroperator.command.CommandManager commandManager;
+
+    private com.touroperator.command.CommandManager getCommandManager() {
+        if (commandManager == null)
+            commandManager = SpringContext.getBean(com.touroperator.command.CommandManager.class);
+        return commandManager;
+    }
+
+     
     @FXML private void onConfirmBooking() {
         Booking sel = selected();
         if (sel == null) return;
         try {
-            bookingService.confirmBooking(sel.getId());
+            String label = "#" + sel.getId().toString().substring(0, 8);
+            getCommandManager().execute(new com.touroperator.command.BookingCommands.ConfirmBookingCommand(
+                  bookingService, sel.getId(), label));
             VoyaAlert.success("Бронювання підтверджено!");
             loadData();
         } catch (Exception e) { VoyaAlert.error(e.getMessage()); }
     }
 
-    // ── Завершити (PAID → COMPLETED) ─────────────────────────────────────
+     
     @FXML private void onCompleteBooking() {
         Booking sel = selected();
         if (sel == null) return;
         try {
-            bookingService.completeBooking(sel.getId());
+            String label = "#" + sel.getId().toString().substring(0, 8);
+            getCommandManager().execute(new com.touroperator.command.BookingCommands.CompleteBookingCommand(
+                  bookingService, sel.getId(), label));
             VoyaAlert.success("Бронювання завершено!");
             loadData();
         } catch (Exception e) { VoyaAlert.error(e.getMessage()); }
     }
 
-    // ── Скасувати (NEW/CONFIRMED → CANCELLED) ────────────────────────────
+     
     @FXML private void onCancelBooking() {
         Booking sel = selected();
         if (sel == null) return;
         try {
-            bookingService.cancelBooking(sel.getId(), "Скасовано менеджером");
+            String label = "#" + sel.getId().toString().substring(0, 8);
+            getCommandManager().execute(new com.touroperator.command.BookingCommands.CancelBookingCommand(
+                  bookingService, sel.getId(), "Скасовано менеджером",
+                  sel.getStatus(), label));
             VoyaAlert.success("Бронювання скасовано.");
             loadData();
         } catch (Exception e) { VoyaAlert.error(e.getMessage()); }
+    }
+
+     
+    private void showAuditPanel(Booking booking) {
+        if (auditPanel == null || auditTimeline == null || auditService == null) return;
+        auditTimeline.getChildren().clear();
+        String shortId = booking.getId().toString().substring(0, 8).toUpperCase();
+        if (auditTitle != null) auditTitle.setText("Історія змін · BK-" + shortId);
+        try {
+            var history = auditService.getHistory(booking.getId());
+            if (history.isEmpty()) {
+                Label empty = new Label("Записів ще немає — нові дії будуть відображатись тут");
+                empty.setStyle("-fx-font-size:12px; -fx-text-fill:#9aaa8a; -fx-padding:6 0;");
+                auditTimeline.getChildren().add(empty);
+            } else {
+                for (var row : history) {
+                    auditTimeline.getChildren().add(buildAuditRow(row));
+                }
+            }
+        } catch (Exception e) {
+            Label err = new Label("Не вдалося завантажити аудит");
+            err.setStyle("-fx-font-size:12px; -fx-text-fill:#c05050; -fx-padding:6 0;");
+            auditTimeline.getChildren().add(err);
+        }
+        auditPanel.setVisible(true);
+        auditPanel.setManaged(true);
+    }
+
+    private javafx.scene.layout.HBox buildAuditRow(java.util.Map<String, Object> row) {
+        javafx.scene.layout.HBox hbox = new javafx.scene.layout.HBox(10);
+        hbox.setAlignment(Pos.CENTER_LEFT);
+        hbox.setStyle("-fx-padding:5 0;");
+
+         
+        String action = String.valueOf(row.getOrDefault("action", ""));
+        String icon = switch (action) {
+            case "CREATE"   -> "🆕";
+            case "CONFIRM"  -> "✅";
+            case "PAY"      -> "💳";
+            case "COMPLETE" -> "🏁";
+            case "CANCEL"   -> "❌";
+            default -> "📌";
+        };
+        Label iconLbl = new Label(icon);
+        iconLbl.setStyle("-fx-font-size:14px; -fx-min-width:24;");
+
+         
+        String oldSt  = row.get("old_status")  != null ? statusLabel(String.valueOf(row.get("old_status"))) : "—";
+        String newSt  = row.get("new_status")  != null ? statusLabel(String.valueOf(row.get("new_status"))) : "—";
+        String who    = String.valueOf(row.getOrDefault("changed_by", "SYSTEM"));
+        String detail = row.get("details") != null ? " · " + row.get("details") : "";
+        Label textLbl = new Label(oldSt + " → " + newSt + " (" + who + ")" + detail);
+        textLbl.setStyle("-fx-font-size:12px; -fx-text-fill:#2d4a1a;");
+        javafx.scene.layout.HBox.setHgrow(textLbl, javafx.scene.layout.Priority.ALWAYS);
+
+         
+        Object ts = row.get("changed_at");
+        String timeStr = ts != null ? ts.toString().substring(0, 16).replace("T", " ") : "";
+        Label timeLbl = new Label(timeStr);
+        timeLbl.setStyle("-fx-font-size:11px; -fx-text-fill:#9aaa8a;");
+
+        hbox.getChildren().addAll(iconLbl, textLbl, timeLbl);
+        return hbox;
+    }
+
+    private void hideAuditPanel() {
+        if (auditPanel == null) return;
+        auditPanel.setVisible(false);
+        auditPanel.setManaged(false);
+    }
+
+    @FXML private void onCloseAudit() { hideAuditPanel(); }
+
+    /** Ctrl+Z — відмінити останню дію */
+    @FXML public void onUndo() {
+        try {
+            getCommandManager().undo();
+            VoyaAlert.success("Дію відмінено.");
+            loadData();
+        } catch (UnsupportedOperationException e) {
+            VoyaAlert.warning(e.getMessage());
+        } catch (Exception e) {
+            VoyaAlert.error("Помилка відміни: " + e.getMessage());
+        }
+    }
+
+    /** Ctrl+Y — повторити відмінену дію */
+    @FXML public void onRedo() {
+        try {
+            getCommandManager().redo();
+            VoyaAlert.success("Дію повторено.");
+            loadData();
+        } catch (Exception e) {
+            VoyaAlert.error("Помилка повтору: " + e.getMessage());
+        }
     }
 
     private Booking selected() {
@@ -841,12 +1047,12 @@ public class BookingsController implements RoleAware {
     static Label pillLabel(String status) {
         Label l = new Label();
         switch (status) {
-            case "NEW", "CREATED" -> { l.setText("Нове");         l.getStyleClass().add("pill-pending");   }
-            case "CONFIRMED"      -> { l.setText("Підтверджено"); l.getStyleClass().add("pill-confirmed"); }
-            case "PAID"           -> { l.setText("Сплачено");     l.getStyleClass().add("pill-paid");      }
-            case "COMPLETED"      -> { l.setText("Завершено");    l.getStyleClass().add("pill-confirmed"); }
-            case "CANCELLED"      -> { l.setText("Скасовано");    l.getStyleClass().add("pill-cancelled"); }
-            default               ->   l.setText(status);
+            case "CREATED"    -> { l.setText("Нове");         l.getStyleClass().add("pill-pending");   }
+            case "CONFIRMED"  -> { l.setText("Підтверджено"); l.getStyleClass().add("pill-confirmed"); }
+            case "PAID"       -> { l.setText("Сплачено");     l.getStyleClass().add("pill-paid");      }
+            case "COMPLETED"  -> { l.setText("Завершено");    l.getStyleClass().add("pill-confirmed"); }
+            case "CANCELLED"  -> { l.setText("Скасовано");    l.getStyleClass().add("pill-cancelled"); }
+            default           ->   l.setText(status);
         }
         return l;
     }

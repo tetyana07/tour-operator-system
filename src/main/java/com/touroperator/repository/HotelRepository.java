@@ -41,4 +41,15 @@ public class HotelRepository {
     public List<Hotel> findAll() {
         return jdbc.query("SELECT * FROM hotels ORDER BY stars DESC, name", MAPPER);
     }
+
+    public void save(Hotel hotel) {
+        if (hotel.getId() == null) hotel.setId(java.util.UUID.randomUUID());
+        jdbc.update(
+              "INSERT INTO hotels (id, name, stars, price_per_night) VALUES (?, ?, ?, ?)",
+              hotel.getId(),
+              hotel.getName(),
+              hotel.getStars(),
+              hotel.getPricePerNight()
+        );
+    }
 }

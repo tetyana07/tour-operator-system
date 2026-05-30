@@ -47,6 +47,7 @@ public class MainApp extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
+        com.touroperator.config.GlobalExceptionHandler.register();
         System.setProperty("prism.lcdtext", "false");
         System.setProperty("prism.text", "t2k");
 

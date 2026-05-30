@@ -25,6 +25,7 @@ public class PaymentRepository {
         p.setAmount(rs.getBigDecimal("amount"));
         p.setPaymentDate(rs.getDate("payment_date").toLocalDate());
         p.setStatus(rs.getString("status"));
+        try { p.setMethod(rs.getString("method")); } catch (Exception ignored) {}
         return p;
     };
 
@@ -52,14 +53,15 @@ public class PaymentRepository {
         if (payment.getId() == null) payment.setId(UUID.randomUUID());
         if (payment.getPaymentDate() == null) payment.setPaymentDate(LocalDate.now());
         jdbc.update("""
-                INSERT INTO payments (id, booking_id, amount, payment_date, status)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO payments (id, booking_id, amount, payment_date, status, method)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
               payment.getId(),
               payment.getBookingId(),
               payment.getAmount(),
               payment.getPaymentDate(),
-              payment.getStatus()
+              payment.getStatus(),
+              payment.getMethod()
         );
     }
 

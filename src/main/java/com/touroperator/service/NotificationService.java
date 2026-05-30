@@ -19,6 +19,7 @@ public class NotificationService {
         BOOKING_CANCELLED,
         BOOKING_COMPLETED,
         EXCEL_EXPORTED,
+        PDF_EXPORTED,
         CLIENT_BOOKING_CANCELLED,
         CLIENT_BOOKING_CONFIRMED,
         CLIENT_BOOKING_PAID,
@@ -98,6 +99,14 @@ public class NotificationService {
               EventType.EXCEL_EXPORTED,
               "Звіт збережено: " + filename,
               "📊", LocalDateTime.now()
+        ));
+    }
+
+    public void notifyPdfExported(String filename) {
+        push(new AppNotification(
+              EventType.PDF_EXPORTED,
+              "PDF звіт збережено: " + filename,
+              "📄", LocalDateTime.now()
         ));
     }
 

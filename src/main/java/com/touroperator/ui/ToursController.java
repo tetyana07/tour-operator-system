@@ -35,9 +35,11 @@ public class ToursController implements RoleAware {
     @FXML private GridPane toursGrid;
     @FXML private Label    tourCountLabel;
     @FXML private Button   tabActive;
+    @FXML private Button   tabFull;
     @FXML private Button   tabArchived;
     @FXML private Button   tabCancelled;
     @FXML private Button   newTourBtn;
+    @FXML private javafx.scene.layout.VBox recommendationSection;
 
     private List<Tour> tours;
     private TourStatus currentFilter = TourStatus.ACTIVE;
@@ -56,10 +58,17 @@ public class ToursController implements RoleAware {
     @FXML
     public void initialize() {
         loadAndRenderTours();
-        // Підписуємось на зміну валюти — перемальовуємо картки одразу
+           
         ProfilePanelController.CurrencySession.addListener(
               () -> javafx.application.Platform.runLater(this::renderCards)
         );
+           
+        toursGrid.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                newScene.widthProperty().addListener((o, ov, nv) ->
+                      javafx.application.Platform.runLater(this::renderCards));
+            }
+        });
     }
 
     /** Викликається MainController одразу після завантаження сторінки */
@@ -68,7 +77,7 @@ public class ToursController implements RoleAware {
         this.currentRole  = role;
         this.currentEmail = email;
         boolean isAdmin = role == UserRole.ADMIN;
-        // Архів і Скасовані — тільки для адміністратора
+           
         if (tabArchived != null) {
             tabArchived.setVisible(isAdmin);
             tabArchived.setManaged(isAdmin);
@@ -77,21 +86,25 @@ public class ToursController implements RoleAware {
             tabCancelled.setVisible(isAdmin);
             tabCancelled.setManaged(isAdmin);
         }
-        // Кнопка "+ Новий тур" — тільки для адміністратора
+        if (tabFull != null) {
+            tabFull.setVisible(isAdmin);
+            tabFull.setManaged(isAdmin);
+        }
+           
         if (newTourBtn != null) {
             newTourBtn.setVisible(isAdmin);
             newTourBtn.setManaged(isAdmin);
         }
     }
 
-    // ── Завантажити тури з БД і перемалювати сітку ──────────────────────────
+       
     private void loadAndRenderTours() {
         try {
             TourService svc = SpringContext.getBean(TourService.class);
             tours = svc.findByStatus(currentFilter);
             tours.sort(java.util.Comparator.comparing(t -> t.getId().toString()));
 
-            // Для клієнта на вкладці ACTIVE — показуємо рекомендовані тури першими
+               
             if (currentRole == UserRole.CLIENT && currentFilter == TourStatus.ACTIVE
                   && currentEmail != null && !currentEmail.isBlank()) {
                 try {
@@ -99,16 +112,11 @@ public class ToursController implements RoleAware {
                     clientRepo.findByEmail(currentEmail).ifPresent(client -> {
                         RecommendationService recSvc = SpringContext.getBean(RecommendationService.class);
                         List<Tour> recommended = recSvc.getRecommendations(client.getId(), 3);
-                        if (!recommended.isEmpty()) {
-                            // Рекомендовані — на початок, решта після
-                            List<Tour> reordered = new java.util.ArrayList<>(recommended);
-                            tours.stream()
-                                  .filter(t -> recommended.stream().noneMatch(r -> r.getId().equals(t.getId())))
-                                  .forEach(reordered::add);
-                            tours = reordered;
-                        }
+                        javafx.application.Platform.runLater(() -> buildRecommendationSection(recommended));
                     });
                 } catch (Exception ignored) {}
+            } else {
+                javafx.application.Platform.runLater(this::hideRecommendationSection);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -121,30 +129,61 @@ public class ToursController implements RoleAware {
     private void updateTabStyles() {
         if (tabActive == null) return;
         tabActive.getStyleClass().setAll(currentFilter == TourStatus.ACTIVE ? "tab-btn-active" : "tab-btn-inactive");
+        if (tabFull != null)
+            tabFull.getStyleClass().setAll(currentFilter == TourStatus.FULL ? "tab-btn-active" : "tab-btn-inactive");
         tabArchived.getStyleClass().setAll(currentFilter == TourStatus.ARCHIVED ? "tab-btn-active" : "tab-btn-inactive");
         tabCancelled.getStyleClass().setAll(currentFilter == TourStatus.CANCELLED ? "tab-btn-active" : "tab-btn-inactive");
     }
 
     @FXML private void onShowActive()    { currentFilter = TourStatus.ACTIVE;    loadAndRenderTours(); }
+    @FXML private void onShowFull()      { currentFilter = TourStatus.FULL;      loadAndRenderTours(); }
     @FXML private void onShowArchived()  { currentFilter = TourStatus.ARCHIVED;  loadAndRenderTours(); }
     @FXML private void onShowCancelled() { currentFilter = TourStatus.CANCELLED; loadAndRenderTours(); }
 
-    // ── Побудувати картки динамічно ──────────────────────────────────────────
+       
+    private int calcCols() {
+        double w = (toursGrid.getScene() != null)
+              ? toursGrid.getScene().getWidth()
+              : 900;
+        if (w >= 900) return 3;
+        if (w >= 600) return 2;
+        return 1;
+    }
+
+       
     private void renderCards() {
         toursGrid.getChildren().clear();
+        toursGrid.getColumnConstraints().clear();
         toursGrid.getRowConstraints().clear();
 
+        int numCols = calcCols();
+
+           
+        for (int c = 0; c < numCols; c++) {
+            ColumnConstraints cc = new ColumnConstraints();
+            cc.setHgrow(Priority.ALWAYS);
+            cc.setPercentWidth(100.0 / numCols);
+            cc.setMinWidth(0);
+            toursGrid.getColumnConstraints().add(cc);
+        }
+
         if (tours.isEmpty()) {
-            Label empty = new Label("Немає активних турів. Натисніть «+ Новий тур» щоб додати.");
+            String emptyMsg = switch (currentFilter) {
+                case FULL -> "Наразі немає повністю заброньованих турів.";
+                case ARCHIVED -> "Архів порожній.";
+                case CANCELLED -> "Скасованих турів немає.";
+                default -> "Немає активних турів. Натисніть «+ Новий тур» щоб додати.";
+            };
+            Label empty = new Label(emptyMsg);
             empty.setStyle("-fx-text-fill:#8a8fa8;-fx-font-size:13px;");
             toursGrid.add(empty, 0, 0);
             tourCountLabel.setText("0 " + filterLabel() + " напрямків");
             return;
         }
 
-        tourCountLabel.setText(tours.size() + " активних напрямків");
+        tourCountLabel.setText(tours.size() + " " + filterLabel() + " напрямків");
 
-        int totalRows = (tours.size() + 2) / 3;
+        int totalRows = (tours.size() + numCols - 1) / numCols;
         for (int r = 0; r < totalRows; r++) {
             javafx.scene.layout.RowConstraints rc = new javafx.scene.layout.RowConstraints();
             rc.setVgrow(Priority.NEVER);
@@ -154,25 +193,106 @@ public class ToursController implements RoleAware {
 
         for (int i = 0; i < tours.size(); i++) {
             Tour tour = tours.get(i);
-            int col = i % 3;
-            int row = i / 3;
+            int col = i % numCols;
+            int row = i / numCols;
             VBox card = buildCard(tour, i);
             toursGrid.add(card, col, row);
         }
     }
 
-    // ── Побудувати одну картку з реальними даними туру ──────────────────────
+       
+    private void buildRecommendationSection(List<Tour> recommended) {
+        if (recommendationSection == null) return;
+        recommendationSection.getChildren().clear();
+        if (recommended.isEmpty()) {
+            hideRecommendationSection();
+            return;
+        }
+
+        Label title = new Label("✨  Рекомендовано для вас");
+        title.setStyle("-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#1a3d08;" +
+              " -fx-font-family:'Syne';");
+        Label sub = new Label("На основі ваших попередніх подорожей");
+        sub.setStyle("-fx-font-size:12px; -fx-text-fill:#7a9a6a;");
+
+        javafx.scene.layout.HBox cards = new javafx.scene.layout.HBox(14);
+        cards.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        for (Tour t : recommended) {
+            cards.getChildren().add(buildRecCard(t));
+        }
+
+        recommendationSection.getChildren().addAll(title, sub, cards);
+        recommendationSection.setVisible(true);
+        recommendationSection.setManaged(true);
+    }
+
+    private void hideRecommendationSection() {
+        if (recommendationSection == null) return;
+        recommendationSection.setVisible(false);
+        recommendationSection.setManaged(false);
+    }
+
+    private javafx.scene.layout.VBox buildRecCard(Tour tour) {
+        javafx.scene.layout.VBox card = new javafx.scene.layout.VBox(8);
+        card.setPrefWidth(220);
+        card.setStyle("-fx-background-color:#f4fbee; -fx-background-radius:14;" +
+              "-fx-border-color:#c8e0b0; -fx-border-radius:14; -fx-border-width:1.5;" +
+              "-fx-padding:14 16; -fx-cursor:default;" +
+              "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.05),6,0,0,2);");
+
+           
+        String flag = countryFlag(tour.getCountry());
+        Label nameLbl = new Label(flag + "  " + tour.getName());
+        nameLbl.setStyle("-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#1a3d08;" +
+              " -fx-wrap-text:true;");
+
+           
+        Label priceLbl = new Label(ProfilePanelController.CurrencySession.format(tour.getBasePrice()));
+        priceLbl.setStyle("-fx-font-size:14px; -fx-font-weight:bold; -fx-text-fill:#27500a;" +
+              " -fx-font-family:'Syne';");
+
+           
+        javafx.scene.layout.HBox row = new javafx.scene.layout.HBox(8);
+        row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        String datesText = tour.getStartDate() != null
+              ? tour.getStartDate().toString() : "Дати уточнюються";
+        Label datesLbl = new Label("📅 " + datesText);
+        datesLbl.setStyle("-fx-font-size:10px; -fx-text-fill:#7a8a6a;");
+        javafx.scene.layout.HBox.setHgrow(datesLbl, javafx.scene.layout.Priority.ALWAYS);
+
+        String badge = tour.getFillRate() >= 0.8 ? "🔥" : tour.getFillRate() >= 0.5 ? "⭐" : "✨";
+        Label badgeLbl = new Label(badge);
+        badgeLbl.setStyle("-fx-font-size:14px;");
+        row.getChildren().addAll(datesLbl, badgeLbl);
+
+           
+        Button btn = new Button("Детальніше →");
+        btn.setStyle("-fx-background-color:#27500a; -fx-text-fill:#eaf3de;" +
+              " -fx-background-radius:8; -fx-padding:5 14; -fx-font-size:11px;" +
+              " -fx-font-weight:bold; -fx-cursor:hand;");
+        btn.setOnAction(e -> openDetail(tour, 0));
+
+        card.getChildren().addAll(nameLbl, priceLbl, row, btn);
+        return card;
+    }
+
+    /** Прапорець країни — делегуємо до UiUtils */
+    private static String countryFlag(String country) {
+        return UiUtils.countryFlag(country);
+    }
+
+       
     private VBox buildCard(Tour tour, int index) {
         String gradient = GRADIENTS[index % GRADIENTS.length];
 
-        // ── Верхня частина (фото або кольоровий банер) ──────────────────────
+           
         StackPane imgPane = new StackPane();
         imgPane.getStyleClass().add("tour-img-pane");
         imgPane.setPrefHeight(140);
         imgPane.setMinHeight(140);
         imgPane.setMaxHeight(140);
 
-        // Заокруглений кліп — щоб фото обрізалось по кутах картки
+           
         javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle();
         clip.setArcWidth(34);
         clip.setArcHeight(34);
@@ -203,18 +323,18 @@ public class ToursController implements RoleAware {
             imgPane.setStyle("-fx-background-color:" + gradient + ";");
         }
 
-        // тіньовий оверлей
+           
         Region shadow = new Region();
         shadow.getStyleClass().add("tour-img-shadow");
         shadow.setMaxWidth(Double.MAX_VALUE);
         shadow.setMaxHeight(Double.MAX_VALUE);
 
-        // бейдж статусу
+           
         Label badge = buildBadge(tour);
         StackPane.setAlignment(badge, javafx.geometry.Pos.TOP_RIGHT);
         StackPane.setMargin(badge, new Insets(10, 10, 0, 0));
 
-        // назва міста
+           
         Label destLbl = new Label(tour.getCountry() + ", " + tour.getCity());
         destLbl.getStyleClass().add("tour-dest-lbl");
         StackPane.setAlignment(destLbl, javafx.geometry.Pos.BOTTOM_LEFT);
@@ -222,11 +342,11 @@ public class ToursController implements RoleAware {
 
         imgPane.getChildren().addAll(shadow, badge, destLbl);
 
-        // ── Нижня частина (тіло картки) ─────────────────────────────────────
+           
         VBox bodyPane = new VBox();
         bodyPane.getStyleClass().add("tour-body-pane");
 
-        // рядок: назва + ціна
+           
         HBox nameRow = new HBox(4);
         nameRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         Label nameLbl = new Label(tour.getName());
@@ -236,14 +356,14 @@ public class ToursController implements RoleAware {
         priceLbl.getStyleClass().add("tour-price-lbl");
         nameRow.getChildren().addAll(nameLbl, priceLbl);
 
-        // рядок: дати
+           
         HBox metaRow = new HBox(12);
         metaRow.setStyle("-fx-padding:2 0 4 0;");
         Label dateLbl = new Label("📅 " + formatDate(tour.getStartDate()) + " – " + formatDate(tour.getEndDate()));
         dateLbl.getStyleClass().add("tour-meta-lbl");
         metaRow.getChildren().add(dateLbl);
 
-        // рядок: місця + прогрес-бар (реальні дані!)
+           
         int booked = tour.getBookedSeats();
         int total  = tour.getQuota();
         double fill = total > 0 ? (double) booked / total : 0.0;
@@ -260,7 +380,7 @@ public class ToursController implements RoleAware {
         ProgressBar bar = new ProgressBar(fill);
         bar.setMaxWidth(Double.MAX_VALUE);
         bar.setPrefHeight(4);
-        // колір бара: >85% — жовтогарячий, інакше — зелений
+           
         if (fill >= 0.85) {
             bar.setStyle("-fx-accent:#c07020;");
         } else {
@@ -270,7 +390,7 @@ public class ToursController implements RoleAware {
 
         bodyPane.getChildren().addAll(nameRow, metaRow, quotaBox);
 
-        // ── Збираємо картку ─────────────────────────────────────────────────
+           
         VBox card = new VBox();
         card.getStyleClass().add("tour-card");
         card.getChildren().addAll(imgPane, bodyPane);
@@ -279,7 +399,7 @@ public class ToursController implements RoleAware {
         GridPane.setVgrow(card, Priority.NEVER);
         GridPane.setFillHeight(card, false);
 
-        // клік → відкрити деталі
+           
         final Tour finalTour = tour;
         final int  finalIdx  = index;
         card.setOnMouseClicked(e -> openDetail(finalTour, finalIdx));
@@ -287,7 +407,7 @@ public class ToursController implements RoleAware {
         return card;
     }
 
-    // ── Бейдж статусу ────────────────────────────────────────────────────────
+       
     private Label buildBadge(Tour tour) {
         double fill = tour.getQuota() > 0 ? (double) tour.getBookedSeats() / tour.getQuota() : 0;
         Label badge = new Label();
@@ -308,7 +428,7 @@ public class ToursController implements RoleAware {
         return badge;
     }
 
-    // ── Відкрити детальне вікно туру ─────────────────────────────────────────
+       
     private void openDetail(Tour tour, int index) {
         String weatherTemp = "+0°C";
         String weatherDesc = "Немає даних (офлайн)";
@@ -330,11 +450,11 @@ public class ToursController implements RoleAware {
             e.printStackTrace();
         }
 
-        // Реальні значення bookedSeats і quota з об'єкта туру
+           
         com.touroperator.domain.TourStatus tourStatusVal =
               tour.getStatus() != null ? tour.getStatus() : com.touroperator.domain.TourStatus.ACTIVE;
 
-        // Реальна назва готелю з БД
+           
         String hotelName = "Без готелю";
         if (tour.getHotelId() != null) {
             try {
@@ -355,7 +475,7 @@ public class ToursController implements RoleAware {
               formatDate(tour.getStartDate()) + " – " + formatDate(tour.getEndDate()),
               daysBetween(tour) + " днів",
               tour.getDeparture() != null && !tour.getDeparture().isBlank()
-                    ? tour.getDeparture() : "Не вказано",
+                    ? tour.getDeparture() : null,
               hotelName, tour.getMealType(),
               weatherIcon, weatherTemp, weatherDesc,
               humidity, wind, feelsLike,
@@ -378,7 +498,7 @@ public class ToursController implements RoleAware {
             scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
             scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
 
-            // Blur на головне вікно при відкритті
+               
             javafx.scene.effect.GaussianBlur blur = new javafx.scene.effect.GaussianBlur(12);
             javafx.scene.Node mainRoot = toursGrid.getScene().getRoot();
             mainRoot.setEffect(blur);
@@ -397,7 +517,7 @@ public class ToursController implements RoleAware {
         }
     }
 
-    // ── Відкрити форму нового туру ───────────────────────────────────────────
+       
     @FXML
     private void onNewTour() {
         try {
@@ -406,6 +526,7 @@ public class ToursController implements RoleAware {
             NewTourController ctrl = loader.getController();
 
             Stage dialog = new Stage(StageStyle.TRANSPARENT);
+            dialog.initOwner(toursGrid.getScene().getWindow());
             dialog.initModality(Modality.APPLICATION_MODAL);
             Scene scene = new Scene(overlay, 640, 580);
             scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
@@ -414,7 +535,7 @@ public class ToursController implements RoleAware {
             ctrl.setOnCancel(dialog::close);
             ctrl.setOnSaved(() -> {
                 dialog.close();
-                // Перезавантажуємо і перемальовуємо картки з БД
+                   
                 loadAndRenderTours();
             });
 
@@ -427,7 +548,7 @@ public class ToursController implements RoleAware {
     }
 
     private void openNewBookingFor(Tour tour) {
-        // Для клієнта — перевіряємо дублікат до відкриття діалогу
+           
         if (currentRole == UserRole.CLIENT && currentEmail != null && !currentEmail.isBlank()) {
             try {
                 com.touroperator.repository.ClientRepository clientRepo =
@@ -452,12 +573,13 @@ public class ToursController implements RoleAware {
             ctrl.setClientContext(currentRole, currentEmail);
 
             Stage dialog = new Stage(StageStyle.TRANSPARENT);
+            dialog.initOwner(toursGrid.getScene().getWindow());
             dialog.initModality(Modality.APPLICATION_MODAL);
             Scene scene = new Scene(overlay, 620, 700);
             scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
             scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
             ctrl.setOnClose(dialog::close);
-            // Після бронювання — оновлюємо картки щоб лінія змінилась
+               
             ctrl.setOnSaved(() -> loadAndRenderTours());
             dialog.setScene(scene);
             dialog.show();
@@ -467,7 +589,7 @@ public class ToursController implements RoleAware {
         }
     }
 
-    // ── Допоміжні методи ────────────────────────────────────────────────────
+       
     private String descToIconLiteral(String desc, BigDecimal temp) {
         if (desc == null) return "fas-cloud";
         String d = desc.toLowerCase();
@@ -503,6 +625,7 @@ public class ToursController implements RoleAware {
     private String filterLabel() {
         return switch (currentFilter) {
             case ACTIVE -> "активних";
+            case FULL -> "повних";
             case ARCHIVED -> "архівних";
             case CANCELLED -> "скасованих";
             default -> "";

@@ -97,6 +97,7 @@ public class WeatherService {
             WeatherForecast fresh = fetchFromApi(city);
             if (fresh != null) {
                 weatherRepo.save(fresh);
+                weatherRepo.deleteStale();
                 log.info("Погода для {}: {} {}", city, fresh.getFormattedTemp(), fresh.getDescription());
                 return fresh;
             }

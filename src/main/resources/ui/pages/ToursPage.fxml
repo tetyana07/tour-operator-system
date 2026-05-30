@@ -19,20 +19,24 @@
     <!-- FILTER TABS -->
     <HBox spacing="8">
       <Button fx:id="tabActive"    text="Активні"    styleClass="tab-btn-active"   onAction="#onShowActive"/>
+      <Button fx:id="tabFull"      text="Повні"      styleClass="tab-btn-inactive" onAction="#onShowFull"
+        visible="false" managed="false"/>
       <Button fx:id="tabArchived"  text="Архів"      styleClass="tab-btn-inactive" onAction="#onShowArchived"
         visible="false" managed="false"/>
       <Button fx:id="tabCancelled" text="Скасовані"  styleClass="tab-btn-inactive" onAction="#onShowCancelled"
         visible="false" managed="false"/>
     </HBox>
 
+    <!-- RECOMMENDATION SECTION — видима тільки для клієнта, заповнюється програмно -->
+    <VBox fx:id="recommendationSection" spacing="10" visible="false" managed="false"
+      style="-fx-background-color:#f0fae8; -fx-background-radius:16;
+             -fx-border-color:#c8e0b0; -fx-border-radius:16; -fx-border-width:1.5;
+             -fx-padding:18 20;">
+    </VBox>
+
     <!-- TOUR CARDS GRID — заповнюється програмно в ToursController -->
-    <GridPane fx:id="toursGrid" hgap="16" vgap="16" maxWidth="Infinity" VBox.vgrow="NEVER">
-      <columnConstraints>
-        <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" minWidth="200"/>
-        <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" minWidth="200"/>
-        <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" minWidth="200"/>
-      </columnConstraints>
-    </GridPane>
+    <GridPane fx:id="toursGrid" hgap="16" vgap="16" maxWidth="Infinity" VBox.vgrow="NEVER"/>
+
 
   </VBox>
 </ScrollPane>

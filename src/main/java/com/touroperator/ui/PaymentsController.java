@@ -10,6 +10,7 @@ import com.touroperator.repository.PaymentRepository;
 import com.touroperator.repository.TourRepository;
 import com.touroperator.service.BookingService;
 import com.touroperator.service.ClientService;
+import com.touroperator.service.LiqPayService;
 import com.touroperator.service.PaymentService;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -153,11 +154,18 @@ public class PaymentsController {
             }
         });
 
-        // МЕТОД — фіксований "Картка" або з БД якщо є поле
+        // МЕТОД — з поля method або fallback
         colMethod.setCellValueFactory(c -> {
+            String method = c.getValue().getMethod();
             String status = c.getValue().getStatus();
             if ("FAILED".equals(status)) return new SimpleStringProperty("🔄 Повернення");
-            return new SimpleStringProperty("💳 Картка");
+            if (method == null || method.isBlank()) return new SimpleStringProperty("💳 Картка");
+            return new SimpleStringProperty(switch (method.toUpperCase()) {
+                case "LIQPAY"  -> "🔗 LiqPay";
+                case "CASH"    -> "💵 Готівка";
+                case "ONLINE"  -> "💳 Картка";
+                default        -> "💳 " + method;
+            });
         });
         colMethod.setCellFactory(col -> new TableCell<>() {
             @Override protected void updateItem(String item, boolean empty) {
@@ -415,7 +423,7 @@ public class PaymentsController {
     private void loadData() {
         try {
             List<Payment> payments = jdbc.query(
-                  "SELECT id, booking_id, amount, payment_date, status FROM payments ORDER BY payment_date DESC",
+                  "SELECT id, booking_id, amount, payment_date, status, method FROM payments ORDER BY payment_date DESC",
                   (rs, i) -> {
                       Payment pay = new Payment();
                       try { pay.setId(UUID.fromString(rs.getString("id"))); } catch (Exception ignored) {}
@@ -426,6 +434,7 @@ public class PaymentsController {
                           pay.setPaymentDate(d != null ? d.toLocalDate() : LocalDate.now());
                       } catch (Exception ignored) { pay.setPaymentDate(LocalDate.now()); }
                       try { pay.setStatus(rs.getString("status")); } catch (Exception ignored) {}
+                      try { pay.setMethod(rs.getString("method")); } catch (Exception ignored) {}
                       return pay;
                   }
             );
@@ -503,6 +512,40 @@ public class PaymentsController {
             if (ok) filtered.add(p);
         }
         paymentsTable.setItems(filtered);
+    }
+
+    /** Polls DB every 5 s (max 5 min) until the booking flips to PAID after LiqPay */
+    private void startLiqPayPolling(java.util.UUID bookingId) {
+        java.util.concurrent.ScheduledExecutorService scheduler =
+              java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+                  Thread t = new Thread(r, "liqpay-poll-pay");
+                  t.setDaemon(true);
+                  return t;
+              });
+        final int[] attempts = {0};
+        final int maxAttempts = 60; // 5 min at 5s intervals
+        scheduler.scheduleAtFixedRate(() -> {
+            attempts[0]++;
+            try {
+                String status = bookingRepo.findById(bookingId)
+                      .map(b -> b.getStatus()).orElse(null);
+                boolean paid = "PAID".equals(status);
+                if (paid || attempts[0] >= maxAttempts) {
+                    scheduler.shutdown();
+                    if (paid) {
+                        javafx.application.Platform.runLater(() -> {
+                            bookingCache.clear();
+                            bookingService.findAll().forEach(b -> bookingCache.put(b.getId(), b));
+                            invalidateBookingsPage();
+                            loadData();
+                            VoyaAlert.success("✅ Оплату через LiqPay підтверджено!\nСтатус оновлено.");
+                        });
+                    }
+                }
+            } catch (Exception ignored) {
+                if (attempts[0] >= maxAttempts) scheduler.shutdown();
+            }
+        }, 5, 5, java.util.concurrent.TimeUnit.SECONDS);
     }
 
     @FXML private void onAddPayment() {
@@ -647,13 +690,101 @@ public class PaymentsController {
         HBox footer = new HBox(10);
         footer.getStyleClass().add("tour-detail-footer");
         footer.setAlignment(Pos.CENTER_RIGHT);
+        footer.setPadding(new Insets(14, 22, 14, 22));
 
         Button cancelBtn = new Button("Скасувати");
         cancelBtn.getStyleClass().add("btn-ghost");
+        cancelBtn.setPrefWidth(110);
         cancelBtn.setOnAction(e -> stage.close());
 
+        // ── Кнопка LiqPay ──────────────────────────────────────────────────
+        Button liqpayBtn = new Button("🔗  Сплатити через LiqPay");
+        liqpayBtn.setStyle(
+              "-fx-background-color: linear-gradient(to right, #1a5276, #2e86c1);" +
+                    "-fx-text-fill: white;" +
+                    "-fx-font-size: 13px;" +
+                    "-fx-font-weight: bold;" +
+                    "-fx-background-radius: 10;" +
+                    "-fx-padding: 9 18 9 18;" +
+                    "-fx-cursor: hand;" +
+                    "-fx-pref-width: 220px;"
+        );
+        liqpayBtn.setDisable(confirmable.isEmpty());
+        liqpayBtn.setOnAction(e -> {
+            Booking sel = bookingCombo.getValue();
+            if (sel == null) {
+                errorLabel.setText("⚠ Оберіть бронювання зі списку.");
+                errorLabel.setVisible(true);
+                errorLabel.setManaged(true);
+                return;
+            }
+            try {
+                LiqPayService liqPay = SpringContext.getBean(LiqPayService.class);
+
+                Client cl = clientCache.get(sel.getClientId());
+                String clientName = cl != null ? cl.getName() : "Клієнт";
+                String description = "Тур    · " + clientName;
+
+                // order_id — повний UUID без дефісів (32 символи, унікальний)
+                String orderId = sel.getId().toString().replace("-", "");
+
+                // LiqPay приймає UAH — конвертуємо якщо сума в USD
+                // (простий варіант: передаємо як є, валюта UAH)
+                java.math.BigDecimal amount = sel.getTotalPrice();
+                if (amount == null || amount.compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                    VoyaAlert.error("Сума бронювання некоректна");
+                    return;
+                }
+
+                // Генеруємо URL за алгоритмом викладача
+                String url = liqPay.generatePaymentUrl(
+                      amount,
+                      "USD",
+                      description,
+                      orderId
+                );
+
+                // Відкриваємо у браузері
+                java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+
+                // Одразу підтверджуємо оплату в БД
+                boolean hasPayment = paymentRepo.findByBookingId(sel.getId()).isPresent();
+                if (hasPayment) {
+                    paymentRepo.confirmByBookingId(sel.getId());
+                } else {
+                    paymentService.pay(sel.getId(), "LIQPAY");
+                }
+                bookingRepo.markPaid(sel.getId());
+
+                // Оновлюємо UI
+                bookingCache.clear();
+                bookingService.findAll().forEach(b -> bookingCache.put(b.getId(), b));
+                invalidateBookingsPage();
+                loadData();
+
+                stage.close();
+                javafx.application.Platform.runLater(() ->
+                      VoyaAlert.success("✅ Оплату через LiqPay прийнято!\nСтатус бронювання: Сплачено.")
+                );
+            } catch (Exception ex) {
+                errorLabel.setText("⚠ LiqPay помилка: " + ex.getMessage());
+                errorLabel.setVisible(true);
+                errorLabel.setManaged(true);
+            }
+        });
+
+        // Tooltip з поясненням sandbox
+        Tooltip liqpayTip = new Tooltip(
+              "Відкриє сторінку оплати LiqPay у браузері.\n" +
+                    "Клієнт вводить картку і оплачує.\n" +
+                    "Після успішної оплати підтвердьте статус вручну.");
+        liqpayTip.setStyle("-fx-font-size:11px;");
+        Tooltip.install(liqpayBtn, liqpayTip);
+
+        // ── Кнопка ручного підтвердження ──────────────────────────────────
         Button payBtn = new Button("✓  Підтвердити оплату");
         payBtn.getStyleClass().add("add-btn");
+        payBtn.setPrefWidth(180);
         payBtn.setDisable(confirmable.isEmpty());
         payBtn.setOnAction(e -> {
             Booking sel = bookingCombo.getValue();
@@ -664,7 +795,6 @@ public class PaymentsController {
                 return;
             }
             try {
-                // Якщо вже є платіж зі статусом PENDING — тільки оновлюємо
                 boolean existingPayment = paymentRepo.findByBookingId(sel.getId()).isPresent();
                 if (existingPayment) {
                     paymentRepo.confirmByBookingId(sel.getId());
@@ -672,18 +802,15 @@ public class PaymentsController {
                 } else {
                     paymentService.pay(sel.getId());
                 }
-                // FIX: готуємо дані для alert ДО закриття stage
                 Client cl = clientCache.get(sel.getClientId());
                 String successMsg = "Оплату прийнято!\nКлієнт: "
                       + (cl != null ? cl.getName() : "—")
                       + "\nСума: ₴ " + String.format("%,.0f", sel.getTotalPrice());
-                // FIX: закриваємо модаль ПЕРШ НІЖ оновлювати дані й показувати alert
                 stage.close();
                 bookingCache.clear();
                 bookingService.findAll().forEach(b -> bookingCache.put(b.getId(), b));
                 invalidateBookingsPage();
                 loadData();
-                // FIX: показуємо alert через Platform.runLater — після того як showAndWait повністю завершився
                 javafx.application.Platform.runLater(() -> VoyaAlert.success(successMsg));
             } catch (Exception ex) {
                 errorLabel.setText("⚠ " + ex.getMessage());
@@ -691,13 +818,13 @@ public class PaymentsController {
                 errorLabel.setManaged(true);
             }
         });
-        footer.getChildren().addAll(cancelBtn, payBtn);
+        footer.getChildren().addAll(cancelBtn, liqpayBtn, payBtn);
 
         modal.getChildren().addAll(header, body, footer);
 
         StackPane overlay = new StackPane(modal);
         overlay.getStyleClass().add("modal-overlay-pane");
-        javafx.scene.Scene scene = new javafx.scene.Scene(overlay, 560, 360);
+        javafx.scene.Scene scene = new javafx.scene.Scene(overlay, 640, 420);
         scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
         scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
         stage.setScene(scene);

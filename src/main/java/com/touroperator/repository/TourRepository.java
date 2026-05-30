@@ -72,6 +72,35 @@ public class TourRepository {
         return jdbc.query("SELECT * FROM tours ORDER BY start_date", TOUR_MAPPER);
     }
 
+    /** Пагінація турів */
+    public List<Tour> findAll(int page, int pageSize) {
+        return jdbc.query(
+              "SELECT * FROM tours ORDER BY start_date LIMIT ? OFFSET ?",
+              TOUR_MAPPER, pageSize, (long) page * pageSize);
+    }
+
+    public int countAll() {
+        Integer c = jdbc.queryForObject("SELECT COUNT(*) FROM tours", Integer.class);
+        return c != null ? c : 0;
+    }
+
+    /**
+     * Повнотекстовий пошук по назві, країні, місту.
+     */
+    public List<Tour> search(String query) {
+        String pattern = "%" + query.trim().toLowerCase() + "%";
+        return jdbc.query(
+              """
+              SELECT * FROM tours
+              WHERE LOWER(name) LIKE ?
+                 OR LOWER(country) LIKE ?
+                 OR LOWER(city) LIKE ?
+              ORDER BY start_date
+              LIMIT 100
+              """,
+              TOUR_MAPPER, pattern, pattern, pattern);
+    }
+
 
     public List<Tour> findByStatus(com.touroperator.domain.TourStatus status) {
         return jdbc.query(

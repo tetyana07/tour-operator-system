@@ -21,6 +21,10 @@ public class PaymentService {
     }
 
     public Payment pay(UUID bookingId) {
+        return pay(bookingId, "ONLINE");
+    }
+
+    public Payment pay(UUID bookingId, String method) {
         Booking booking = bookingRepo.findById(bookingId)
               .orElseThrow(() -> new RuntimeException("Бронювання не знайдено: " + bookingId));
 
@@ -30,6 +34,7 @@ public class PaymentService {
         payment.setAmount(booking.getTotalPrice());
         payment.setPaymentDate(LocalDate.now());
         payment.setStatus("SUCCESS");
+        payment.setMethod(method != null ? method : "ONLINE");
 
         paymentRepo.save(payment);
         bookingRepo.markPaid(bookingId);

@@ -2,25 +2,21 @@ package com.touroperator.ui;
 
 import com.touroperator.ui.VoyaAlert;
 import com.touroperator.config.SpringContext;
-import com.touroperator.domain.Hotel;
 import com.touroperator.domain.Tour;
-import com.touroperator.repository.HotelRepository;
 import com.touroperator.service.TourService;
-import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
-import javafx.util.StringConverter;
 
 import java.io.File;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.List;
+import javafx.util.StringConverter;
 
 public class NewTourController {
 
@@ -33,7 +29,7 @@ public class NewTourController {
     @FXML private DatePicker         endDatePicker;
     @FXML private TextField          priceField;
     @FXML private Spinner<Integer>   quotaSpinner;
-    @FXML private ComboBox<Hotel>    hotelCombo;
+    @FXML private TextField          hotelField;
     @FXML private Label              statusLabel;
 
     @FXML private TextField          departureField;
@@ -54,6 +50,7 @@ public class NewTourController {
 
     private Runnable onCancelCallback;
     private Runnable onSavedCallback;
+    private boolean saving = false;
 
     @FXML
     public void initialize() {
@@ -83,25 +80,7 @@ public class NewTourController {
         startDatePicker.setValue(LocalDate.now());
         endDatePicker.setValue(LocalDate.now().plusDays(7));
 
-        // Готелі
-        try {
-            HotelRepository hotelRepo = SpringContext.getBean(HotelRepository.class);
-            List<Hotel> hotels = hotelRepo.findAll();
-            hotelCombo.setConverter(new StringConverter<>() {
-                public String toString(Hotel h) {
-                    if (h == null) return "Без готелю";
-                    return h.getName() + " " + "★".repeat(Math.max(0, h.getStars()));
-                }
-                public Hotel fromString(String s) { return null; }
-            });
-            List<Hotel> withNull = new java.util.ArrayList<>();
-            withNull.add(null);
-            withNull.addAll(hotels);
-            hotelCombo.setItems(FXCollections.observableArrayList(withNull));
-            hotelCombo.getSelectionModel().selectFirst();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+
     }
 
     public void setOnCancel(Runnable r) { this.onCancelCallback = r; }
@@ -159,6 +138,14 @@ public class NewTourController {
             showError("Оберіть дату початку і завершення туру (формат: дд.мм.рррр).");
             return;
         }
+        if (!endDate.isAfter(startDate)) {
+            showError("Дата завершення має бути пізніше дати початку.");
+            return;
+        }
+        if (startDate.isBefore(java.time.LocalDate.now())) {
+            showError("Дата початку туру не може бути в минулому.");
+            return;
+        }
 
         BigDecimal price;
         try {
@@ -171,13 +158,29 @@ public class NewTourController {
 
         int quota = quotaSpinner.getValue();
 
-        Hotel selectedHotel = hotelCombo != null ? hotelCombo.getValue() : null;
-        java.util.UUID hotelId = selectedHotel != null ? selectedHotel.getId() : null;
+        // Якщо введено назву готелю — автоматично створюємо запис в hotels
+        java.util.UUID hotelId = null;
+        String hotelName = hotelField != null ? hotelField.getText().trim() : "";
+        if (!hotelName.isBlank()) {
+            try {
+                com.touroperator.repository.HotelRepository hotelRepo =
+                      SpringContext.getBean(com.touroperator.repository.HotelRepository.class);
+                com.touroperator.domain.Hotel newHotel = new com.touroperator.domain.Hotel();
+                newHotel.setId(java.util.UUID.randomUUID());
+                newHotel.setName(hotelName);
+                newHotel.setStars(0);
+                newHotel.setPricePerNight(java.math.BigDecimal.ZERO);
+                hotelRepo.save(newHotel);
+                hotelId = newHotel.getId();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
         Tour tour = new Tour(name, country, city, startDate, endDate, price, quota, hotelId);
         tour.setImagePath(selectedImagePath);
         // Що включено
-        tour.setDeparture(departureField != null ? departureField.getText() : null);
+        tour.setDeparture(departureField != null ? departureField.getText().trim() : null);
         tour.setMealType(mealCombo != null ? mealCombo.getValue() : null);
         tour.setHasFlight(checkFlight != null && checkFlight.isSelected());
         tour.setHasTransfer(checkTransfer != null && checkTransfer.isSelected());
@@ -190,8 +193,10 @@ public class NewTourController {
             if (onSavedCallback != null) onSavedCallback.run();
             if (onCancelCallback != null) onCancelCallback.run();
         } catch (IllegalArgumentException e) {
+            e.printStackTrace();
             showError(e.getMessage());
         } catch (Exception e) {
+            e.printStackTrace();
             showError("Помилка збереження: " + e.getMessage());
         }
     }
@@ -207,6 +212,17 @@ public class NewTourController {
         statusLabel.setText(msg);
         statusLabel.setVisible(true);
         statusLabel.setManaged(true);
+        // Прокручуємо форму вгору щоб помилка була видима
+        javafx.application.Platform.runLater(() -> {
+            javafx.scene.Parent p = statusLabel.getParent();
+            while (p != null) {
+                if (p instanceof javafx.scene.control.ScrollPane sp) {
+                    sp.setVvalue(0);
+                    break;
+                }
+                p = p.getParent();
+            }
+        });
     }
 
     private void hideError() {
