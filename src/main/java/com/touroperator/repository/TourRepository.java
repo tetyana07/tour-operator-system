@@ -49,6 +49,7 @@ public class TourRepository {
         t.setHasTransfer(rs.getBoolean("has_transfer"));
         t.setHasInsurance(rs.getBoolean("has_insurance"));
         t.setHasGuide(rs.getBoolean("has_guide"));
+        t.setDeparture(rs.getString("departure"));
         return t;
     };
 

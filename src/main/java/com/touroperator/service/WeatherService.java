@@ -87,6 +87,8 @@ public class WeatherService {
             return WeatherForecast.unknown("невідоме місто");
         }
 
+        city = normalizeCity(city);
+
         var cached = weatherRepo.findFreshCache(city);
         if (cached.isPresent()) {
             log.debug("Погода з кешу для {}", city);
@@ -167,8 +169,7 @@ public class WeatherService {
     }
 
     private WeatherForecast fetchFromApi(String city) throws Exception {
-        String normalizedCity = normalizeCity(city);
-        String encodedCity = java.net.URLEncoder.encode(normalizedCity, StandardCharsets.UTF_8);
+        String encodedCity = java.net.URLEncoder.encode(city, StandardCharsets.UTF_8);
         String url = WEATHER_API_URL.replace("{city}", encodedCity);
 
         HttpHeaders headers = new HttpHeaders();
@@ -214,7 +215,7 @@ public class WeatherService {
     }
 
     private static String translate(String english) {
-        String key = english.toLowerCase().trim();
+        String key = english.toLowerCase().replaceAll("\\s+", " ").strip();
         return TRANSLATIONS.getOrDefault(key, english);
     }
 }
