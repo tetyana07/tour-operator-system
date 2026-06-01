@@ -61,6 +61,9 @@ jobs:
           mail.username=${{ secrets.MAIL_USERNAME }}
           mail.password=${{ secrets.MAIL_PASSWORD }}
           mail.dry.run=false
+          liqpay.public.key=sandbox_i15291823284
+          liqpay.private.key=sandbox_LuMAtqM4X3vtFSEasrIuuMiv8gh35HZPHS5o6sHP
+          liqpay.sandbox=true
           EOF
 
       - name: Build Fat JAR
