@@ -117,13 +117,19 @@ CREATE TABLE IF NOT EXISTS booking_transfers (
     );
 
 -- ─── PAYMENTS ─────────────────────────────────────────────────────────────────
+-- ВИПРАВЛЕННЯ:
+--   1. Прибрано UNIQUE з booking_id — одне бронювання може мати кілька записів
+--      (оригінальний платіж + рефанд при скасуванні).
+--   2. CHECK (amount <> 0) замість amount > 0 — рефанд зберігається як від'ємна сума.
+--   3. Додано 'REFUND' до дозволених статусів (BookingService використовує "REFUND",
+--      а не "REFUNDED").
 CREATE TABLE IF NOT EXISTS payments (
                                         id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    booking_id   UUID NOT NULL UNIQUE REFERENCES bookings(id),
-    amount       NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
+    booking_id   UUID NOT NULL REFERENCES bookings(id),
+    amount       NUMERIC(12, 2) NOT NULL CHECK (amount <> 0),
     payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
     status       VARCHAR(20) NOT NULL DEFAULT 'PENDING'
-    CHECK (status IN ('PENDING','SUCCESS','FAILED','REFUNDED')),
+    CHECK (status IN ('PENDING','SUCCESS','FAILED','REFUNDED','REFUND')),
     method       VARCHAR(50)
     );
 

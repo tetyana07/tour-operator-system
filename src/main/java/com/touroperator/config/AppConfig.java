@@ -58,13 +58,16 @@ public class AppConfig {
         return new JdbcTemplate(dataSource);
     }
 
-    @Bean(initMethod = "migrate")
+    @Bean
     public Flyway flyway(DataSource dataSource) {
-        return Flyway.configure()
+        Flyway flyway = Flyway.configure()
               .dataSource(dataSource)
               .locations("classpath:db/migration")
               .baselineOnMigrate(true)
               .load();
+        flyway.repair();   // оновлює контрольні суми в flyway_schema_history
+        flyway.migrate();  // виконує нові міграції
+        return flyway;
     }
 
     @Bean

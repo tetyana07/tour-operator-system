@@ -11,6 +11,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
 import java.util.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 /**
@@ -25,14 +26,14 @@ public class NewBookingController {
     @FXML private Spinner<Integer>    childSpinner;
     @FXML private TextField           promoField;
 
-     
+
     @FXML private ComboBox<Hotel>     hotelCombo;
     @FXML private ComboBox<Transfer>  transferCombo;
     @FXML private ComboBox<Insurance> insuranceCombo;
     @FXML private ComboBox<Excursion> excursionCombo;
     @FXML private ComboBox<String>    discountCombo;
 
-     
+
     @FXML private Label badgeEarly;
     @FXML private Label badgeChild;
     @FXML private Label badgeGroup;
@@ -42,6 +43,7 @@ public class NewBookingController {
     @FXML private Label discountLine;
     @FXML private Label totalPrice;
     @FXML private Label dynamicLabel;
+    @FXML private HBox  dynamicRow;
     @FXML private Label tourBadge;
     @FXML private VBox tourSection;
     @FXML private VBox clientSection;
@@ -75,7 +77,7 @@ public class NewBookingController {
             transferRepo   = SpringContext.getBean(TransferRepository.class);
             excursionRepo  = SpringContext.getBean(ExcursionRepository.class);
 
-             
+
             List<Client> clients = clientService.findAll();
             clientCombo.setItems(FXCollections.observableArrayList(clients));
             clientCombo.setConverter(new javafx.util.StringConverter<>() {
@@ -84,7 +86,7 @@ public class NewBookingController {
             });
             if (!clients.isEmpty()) clientCombo.getSelectionModel().selectFirst();
 
-             
+
             List<Tour> tours = tourService.findAll();
             tourCombo.setItems(FXCollections.observableArrayList(tours));
             tourCombo.setConverter(new javafx.util.StringConverter<>() {
@@ -95,17 +97,17 @@ public class NewBookingController {
             });
             if (!tours.isEmpty()) tourCombo.getSelectionModel().selectFirst();
 
-             
+
             paxSpinner.setValueFactory(
                   new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 30, 2));
             if (childSpinner != null)
                 childSpinner.setValueFactory(
                       new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 10, 0));
 
-             
+
             if (insuranceCombo != null) {
                 List<Insurance> ins = insuranceRepo.findAll();
-                 
+
                 insuranceCombo.setConverter(new javafx.util.StringConverter<>() {
                     public String toString(Insurance i) {
                         return i != null ? i.getName() + " (+₴" + String.format("%,.0f", i.getPrice()) + ")" : "Без страховки";
@@ -119,7 +121,7 @@ public class NewBookingController {
                 insuranceCombo.getSelectionModel().selectFirst();
             }
 
-             
+
             if (transferCombo != null) {
                 List<Transfer> transfers = transferRepo.findAll();
                 transferCombo.setConverter(new javafx.util.StringConverter<>() {
@@ -135,14 +137,14 @@ public class NewBookingController {
                 transferCombo.getSelectionModel().selectFirst();
             }
 
-             
+
             if (discountCombo != null) {
                 discountCombo.setItems(FXCollections.observableArrayList(
                       "Без спеціальної знижки", "Корпоратив (-15%)", "Ювілей (-20%)"));
                 discountCombo.getSelectionModel().selectFirst();
             }
 
-             
+
             paxSpinner.valueProperty().addListener((o, ov, nv) -> updateTotal());
             if (childSpinner != null)
                 childSpinner.valueProperty().addListener((o, ov, nv) -> updateTotal());
@@ -154,10 +156,10 @@ public class NewBookingController {
             if (excursionCombo != null)
                 excursionCombo.valueProperty().addListener((o, ov, nv) -> updateTotal());
 
-             
+
             onTourChanged();
 
-             
+
             ProfilePanelController.CurrencySession.addListener(
                   () -> javafx.application.Platform.runLater(this::updateTotal)
             );
@@ -173,7 +175,7 @@ public class NewBookingController {
         Tour tour = tourCombo != null ? tourCombo.getValue() : null;
         if (tour == null) return;
 
-         
+
         if (hotelCombo != null) {
             hotelCombo.getItems().clear();
             if (tour.getHotelId() != null) {
@@ -194,7 +196,7 @@ public class NewBookingController {
                     public String toString(Hotel h) { return h != null ? h.getName() : "Готель не призначено"; }
                     public Hotel fromString(String s) { return null; }
                 });
-                 
+
                 List<Hotel> hotels = hotelRepo.findAll();
                 List<Hotel> hotelsWithNull = new ArrayList<>();
                 hotelsWithNull.add(null);
@@ -204,7 +206,7 @@ public class NewBookingController {
             }
         }
 
-         
+
         if (excursionCombo != null) {
             List<Excursion> excursions = excursionRepo.findByTourId(tour.getId());
             excursionCombo.setConverter(new javafx.util.StringConverter<>() {
@@ -254,22 +256,26 @@ public class NewBookingController {
         String promoCode = promoField != null ? promoField.getText().trim() : null;
         if (promoCode != null && promoCode.isBlank()) promoCode = null;
 
-         
+
         int extraDiscount = parseExtraDiscountPercent(
               discountCombo != null ? discountCombo.getValue() : null);
 
         try {
-             
+
             var breakdown = pricingService.calculate(tour, total, child, excIds, insId, trId, promoCode, extraDiscount);
 
             updateDiscountBadges(tour, child, total);
 
             if (baseLine   != null) baseLine.setText("Базова ціна × " + total);
-             
+
             if (basePrice   != null) basePrice.setText(fmt(breakdown.getBasePrice()));
             if (discountLine != null) discountLine.setText("−" + fmt(breakdown.getTotalDiscount()));
             if (totalPrice   != null) totalPrice.setText(fmt(breakdown.getFinalPrice()));
-            if (dynamicLabel != null) dynamicLabel.setVisible(breakdown.hasDynamicSurcharge());
+            // Динамічна надбавка: показуємо рядок і суму
+            boolean hasDynamic = breakdown.hasDynamicSurcharge();
+            if (dynamicRow   != null) { dynamicRow.setVisible(hasDynamic);   dynamicRow.setManaged(hasDynamic); }
+            if (dynamicLabel != null && hasDynamic)
+                dynamicLabel.setText("+ " + fmt(breakdown.getDynamicSurcharge()));
         } catch (Exception e) {
             if (totalPrice != null) totalPrice.setText("Помилка розрахунку");
         }
@@ -280,18 +286,18 @@ public class NewBookingController {
      * активна (зелена) або неактивна (сіра).
      */
     private void updateDiscountBadges(Tour tour, int childCount, int touristCount) {
-         
+
         if (badgeEarly != null) {
             boolean earlyActive = tour.getStartDate() != null &&
                   java.time.temporal.ChronoUnit.DAYS.between(
                         java.time.LocalDate.now(), tour.getStartDate()) >= 30;
             setBadgeActive(badgeEarly, "⏰ Раннє бронювання −10%", earlyActive);
         }
-         
+
         if (badgeChild != null) {
             setBadgeActive(badgeChild, "👶 Дитяча знижка −30%", childCount > 0);
         }
-         
+
         if (badgeGroup != null) {
             setBadgeActive(badgeGroup, "👥 Групова −7%", touristCount >= 5);
         }
@@ -344,19 +350,19 @@ public class NewBookingController {
         int child = childSpinner != null && childSpinner.getValue() != null ? childSpinner.getValue() : 0;
         String promoCode = promoField != null ? promoField.getText().trim() : "";
 
-         
+
         List<UUID> excursionIds = new ArrayList<>();
         if (excursionCombo != null && excursionCombo.getValue() != null) {
             excursionIds.add(excursionCombo.getValue().getId());
         }
 
-         
+
         UUID insuranceId = (insuranceCombo != null && insuranceCombo.getValue() != null)
               ? insuranceCombo.getValue().getId() : null;
         UUID transferId  = (transferCombo  != null && transferCombo.getValue()  != null)
               ? transferCombo.getValue().getId()  : null;
 
-         
+
         int extraDiscount = parseExtraDiscountPercent(
               discountCombo != null ? discountCombo.getValue() : null);
 
@@ -388,13 +394,13 @@ public class NewBookingController {
                   tourCombo.getSelectionModel().select(t);
                   onTourChanged();
               });
-         
+
         if (tourBadge != null) {
             tourBadge.setText("📍 " + tour.getName() + "  ·  " + tour.getCountry());
             tourBadge.setVisible(true);
             tourBadge.setManaged(true);
         }
-         
+
         if (tourSection != null) {
             tourSection.setVisible(false);
             tourSection.setManaged(false);
@@ -407,15 +413,15 @@ public class NewBookingController {
      */
     public void setClientContext(UserRole role, String email) {
         if (role == UserRole.ADMIN) {
-             
+
             if (clientSection != null) {
                 clientSection.setVisible(true);
                 clientSection.setManaged(true);
             }
-             
+
             return;
         }
-         
+
         if (email == null || email.isBlank()) return;
         try {
             com.touroperator.repository.ClientRepository clientRepo =

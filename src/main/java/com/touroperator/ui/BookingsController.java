@@ -52,12 +52,12 @@ public class BookingsController implements RoleAware {
     @FXML private Button btnRedo;
     @FXML private HBox   adminActionBar;
 
-     
+
     @FXML private javafx.scene.layout.VBox auditPanel;
     @FXML private Label                    auditTitle;
     @FXML private javafx.scene.layout.VBox auditTimeline;
 
-     
+
     @FXML private javafx.scene.layout.VBox adminView;
     @FXML private javafx.scene.layout.VBox clientView;
     @FXML private javafx.scene.layout.VBox clientCardsContainer;
@@ -95,7 +95,7 @@ public class BookingsController implements RoleAware {
         }
         if (btnNewBooking != null) { btnNewBooking.setVisible(isAdmin); btnNewBooking.setManaged(isAdmin); }
 
-         
+
         if (adminView  != null) { adminView.setVisible(isAdmin);   adminView.setManaged(isAdmin); }
         if (clientView != null) { clientView.setVisible(!isAdmin); clientView.setManaged(!isAdmin); }
 
@@ -119,7 +119,7 @@ public class BookingsController implements RoleAware {
             clientService.findAll().forEach(c -> clientCache.put(c.getId(), c));
             tourService.findAll().forEach(t -> tourCache.put(t.getId(), t));
 
-             
+
             quotaService.addListener(new QuotaService.QuotaListener() {
                 @Override
                 public void onQuotaChanged(Tour tour, int remaining) {
@@ -142,7 +142,7 @@ public class BookingsController implements RoleAware {
             setupSelectionListener();
             loadData();
 
-             
+
             var cm = getCommandManager();
             if (btnUndo != null) {
                 btnUndo.disableProperty().bind(cm.canUndoProperty().not());
@@ -157,14 +157,14 @@ public class BookingsController implements RoleAware {
                 });
             }
 
-             
+
             ProfilePanelController.CurrencySession.addListener(this::loadData);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-     
+
     private void setupSelectionListener() {
         bookingsTable.getSelectionModel().selectedItemProperty().addListener(
               (obs, oldVal, newVal) -> {
@@ -204,7 +204,7 @@ public class BookingsController implements RoleAware {
         btn.setOpacity(active ? 1.0 : 0.4);
     }
 
-     
+
     private void setupFilters() {
         statusFilter.setItems(FXCollections.observableArrayList(
               "Всі статуси","CREATED","CONFIRMED","PAID","COMPLETED","CANCELLED"));
@@ -216,13 +216,13 @@ public class BookingsController implements RoleAware {
         tourFilter.getSelectionModel().selectFirst();
     }
 
-     
+
     private void setupColumns() {
-         
+
         colId.setCellValueFactory(c -> {
-             
+
             String id = c.getValue().getId().toString();
-             
+
             String shortHex = id.replace("-","").substring(0,4).toUpperCase();
             return new SimpleStringProperty("BK-" + shortHex);
         });
@@ -242,7 +242,7 @@ public class BookingsController implements RoleAware {
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) { setGraphic(null); setText(null); return; }
-                 
+
                 String initials = getInitials(item);
                 javafx.scene.layout.HBox box = new javafx.scene.layout.HBox(10);
                 box.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
@@ -330,26 +330,29 @@ public class BookingsController implements RoleAware {
         };
     }
 
-     
+
     private void loadData() {
         com.touroperator.ui.util.AsyncDataLoader.load(
               () -> {
-                   
+                  clientCache.clear();
+                  clientService.findAll().forEach(c -> clientCache.put(c.getId(), c));
+                  tourCache.clear();
+                  tourService.findAll().forEach(t -> tourCache.put(t.getId(), t));
                   if (currentRole == UserRole.CLIENT && currentEmail != null && !currentEmail.isBlank()) {
-                       
+
                       return bookingService.findByClientEmail(currentEmail);
                   } else {
                       return bookingService.findAll();
                   }
               },
               bookings -> {
-                   
+
                   allBookings = FXCollections.observableArrayList(bookings);
                   bookingsTable.setItems(allBookings);
                   updateStats();
                   updateActionButtons(null);
                   bookingsTable.getSelectionModel().clearSelection();
-                   
+
                   if (currentRole == UserRole.CLIENT) buildClientCards();
               },
               errorMsg -> VoyaAlert.error(errorMsg)
@@ -381,20 +384,20 @@ public class BookingsController implements RoleAware {
             String cost = ProfilePanelController.CurrencySession.format(
                   b.getTotalPrice() != null ? b.getTotalPrice() : java.math.BigDecimal.ZERO);
 
-             
+
             String statusText  = statusLabel(b.getStatus());
             String statusColor = statusColor(b.getStatus());
             boolean canCancel = "CREATED".equals(b.getStatus()) || "CONFIRMED".equals(b.getStatus());
             boolean canPay    = "CONFIRMED".equals(b.getStatus());
             boolean canRefund = "PAID".equals(b.getStatus());
 
-             
+
             javafx.scene.layout.VBox card = new javafx.scene.layout.VBox(10);
             card.setStyle("-fx-background-color:white; -fx-background-radius:16;" +
                   "-fx-border-color:#e8f0e0; -fx-border-radius:16;" +
                   "-fx-padding:18 20; -fx-effect:dropshadow(gaussian,rgba(0,0,0,0.06),8,0,0,2);");
 
-             
+
             javafx.scene.layout.HBox row1 = new javafx.scene.layout.HBox(10);
             row1.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
             Label nameLbl = new Label("✈  " + tourName);
@@ -406,7 +409,7 @@ public class BookingsController implements RoleAware {
                   "-fx-padding:3 10; -fx-font-size:11px; -fx-font-weight:bold;");
             row1.getChildren().addAll(nameLbl, statusLbl);
 
-             
+
             javafx.scene.layout.HBox row2 = new javafx.scene.layout.HBox(20);
             row2.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
             Label datesLbl = new Label("📅 " + dates);
@@ -418,7 +421,7 @@ public class BookingsController implements RoleAware {
             costLbl.setStyle("-fx-font-size:15px; -fx-font-weight:bold; -fx-text-fill:#2d6b1a;");
             row2.getChildren().addAll(datesLbl, paxLbl, costLbl);
 
-             
+
             javafx.scene.layout.HBox row3 = new javafx.scene.layout.HBox(10);
             row3.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
             Label idLbl = new Label("№ " + b.getId().toString().substring(0, 8).toUpperCase());
@@ -426,7 +429,7 @@ public class BookingsController implements RoleAware {
             javafx.scene.layout.HBox.setHgrow(idLbl, javafx.scene.layout.Priority.ALWAYS);
 
             if (canPay) {
-                 
+
                 Button liqpayBtn = new Button("🔗  Сплатити через LiqPay");
                 liqpayBtn.setStyle("-fx-background-color: linear-gradient(to right,#1a5276,#2e86c1);" +
                       "-fx-text-fill:white; -fx-border-radius:8; -fx-background-radius:8;" +
@@ -470,7 +473,7 @@ public class BookingsController implements RoleAware {
             clientCardsContainer.getChildren().add(card);
         }
 
-         
+        buildTourRecommendations();
     }
 
     /**
@@ -481,7 +484,7 @@ public class BookingsController implements RoleAware {
     private void buildTourRecommendations() {
         if (clientCardsContainer == null) return;
 
-         
+
         java.util.Set<UUID> bookedTourIds = allBookings.stream()
               .map(Booking::getTourId)
               .collect(java.util.stream.Collectors.toSet());
@@ -497,7 +500,7 @@ public class BookingsController implements RoleAware {
 
         if (recommended.isEmpty()) return;
 
-         
+
         javafx.scene.layout.VBox section = new javafx.scene.layout.VBox(12);
         section.setStyle("-fx-padding:20 0 0 0;");
 
@@ -527,7 +530,7 @@ public class BookingsController implements RoleAware {
               "-fx-padding:16 18; -fx-effect:dropshadow(gaussian,rgba(0,0,0,0.04),6,0,0,2);" +
               "-fx-cursor:default;");
 
-         
+
         javafx.scene.layout.HBox row1 = new javafx.scene.layout.HBox(8);
         row1.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
@@ -548,7 +551,7 @@ public class BookingsController implements RoleAware {
 
         row1.getChildren().addAll(flag, nameBox, priceLbl);
 
-         
+
         javafx.scene.layout.HBox row2 = new javafx.scene.layout.HBox(14);
         row2.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
@@ -563,7 +566,7 @@ public class BookingsController implements RoleAware {
               (seats <= 3 ? "#c05000" : "#4a6a3a") + ";");
         javafx.scene.layout.HBox.setHgrow(seatsLbl, javafx.scene.layout.Priority.ALWAYS);
 
-         
+
         String badge = tour.getFillRate() >= 0.8 ? "🔥 Популярне"
               : tour.getFillRate() >= 0.5 ? "⭐ Рекомендовано"
                     : "✨ Новинка";
@@ -574,7 +577,7 @@ public class BookingsController implements RoleAware {
 
         row2.getChildren().addAll(datesLbl, seatsLbl, badgeLbl);
 
-         
+
         javafx.scene.layout.HBox row3 = new javafx.scene.layout.HBox();
         row3.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
         Button bookBtn = new Button("Забронювати →");
@@ -585,7 +588,7 @@ public class BookingsController implements RoleAware {
               " -fx-background-radius:10; -fx-padding:6 18; -fx-font-size:12px; -fx-font-weight:bold; -fx-cursor:hand;"));
         bookBtn.setOnMouseExited(e -> bookBtn.setStyle("-fx-background-color:#27500a; -fx-text-fill:#eaf3de;" +
               " -fx-background-radius:10; -fx-padding:6 18; -fx-font-size:12px; -fx-font-weight:bold; -fx-cursor:hand;"));
-         
+
         bookBtn.setOnAction(e -> openNewBookingForTour(tour));
         row3.getChildren().add(bookBtn);
 
@@ -704,7 +707,7 @@ public class BookingsController implements RoleAware {
             String url = liqPay.generatePaymentUrl(amount, "USD", description, orderId);
             java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
 
-             
+
             com.touroperator.repository.PaymentRepository payRepo =
                   com.touroperator.config.SpringContext.getBean(com.touroperator.repository.PaymentRepository.class);
             com.touroperator.repository.BookingRepository bookRepo =
@@ -719,7 +722,7 @@ public class BookingsController implements RoleAware {
             }
             bookRepo.markPaid(booking.getId());
 
-             
+
             loadData();
             try {
                 Object ud = bookingsTable != null
@@ -808,7 +811,7 @@ public class BookingsController implements RoleAware {
         long confirmed = allBookings.stream().filter(b -> "CONFIRMED".equals(b.getStatus())).count();
         long paid      = allBookings.stream().filter(b -> "PAID".equals(b.getStatus())).count();
         long cancelled = allBookings.stream().filter(b -> "CANCELLED".equals(b.getStatus())).count();
-        long pending   = allBookings.stream().filter(b -> "NEW".equals(b.getStatus())).count();
+        long pending   = allBookings.stream().filter(b -> "CREATED".equals(b.getStatus())).count();
 
         if (bookingCountLabel != null) {
             if (currentRole == UserRole.CLIENT) {
@@ -825,7 +828,7 @@ public class BookingsController implements RoleAware {
         if (statCancelled != null) statCancelled.setText(String.valueOf(cancelled));
     }
 
-     
+
 
     @FXML private void onNewBooking() {
         try {
@@ -878,7 +881,7 @@ public class BookingsController implements RoleAware {
         bookingsTable.setItems(filtered);
     }
 
-     
+
     private com.touroperator.command.CommandManager commandManager;
 
     private com.touroperator.command.CommandManager getCommandManager() {
@@ -887,7 +890,7 @@ public class BookingsController implements RoleAware {
         return commandManager;
     }
 
-     
+
     @FXML private void onConfirmBooking() {
         Booking sel = selected();
         if (sel == null) return;
@@ -900,7 +903,7 @@ public class BookingsController implements RoleAware {
         } catch (Exception e) { VoyaAlert.error(e.getMessage()); }
     }
 
-     
+
     @FXML private void onCompleteBooking() {
         Booking sel = selected();
         if (sel == null) return;
@@ -913,7 +916,7 @@ public class BookingsController implements RoleAware {
         } catch (Exception e) { VoyaAlert.error(e.getMessage()); }
     }
 
-     
+
     @FXML private void onCancelBooking() {
         Booking sel = selected();
         if (sel == null) return;
@@ -927,7 +930,7 @@ public class BookingsController implements RoleAware {
         } catch (Exception e) { VoyaAlert.error(e.getMessage()); }
     }
 
-     
+
     private void showAuditPanel(Booking booking) {
         if (auditPanel == null || auditTimeline == null || auditService == null) return;
         auditTimeline.getChildren().clear();
@@ -958,7 +961,7 @@ public class BookingsController implements RoleAware {
         hbox.setAlignment(Pos.CENTER_LEFT);
         hbox.setStyle("-fx-padding:5 0;");
 
-         
+
         String action = String.valueOf(row.getOrDefault("action", ""));
         String icon = switch (action) {
             case "CREATE"   -> "🆕";
@@ -971,7 +974,7 @@ public class BookingsController implements RoleAware {
         Label iconLbl = new Label(icon);
         iconLbl.setStyle("-fx-font-size:14px; -fx-min-width:24;");
 
-         
+
         String oldSt  = row.get("old_status")  != null ? statusLabel(String.valueOf(row.get("old_status"))) : "—";
         String newSt  = row.get("new_status")  != null ? statusLabel(String.valueOf(row.get("new_status"))) : "—";
         String who    = String.valueOf(row.getOrDefault("changed_by", "SYSTEM"));
@@ -980,7 +983,7 @@ public class BookingsController implements RoleAware {
         textLbl.setStyle("-fx-font-size:12px; -fx-text-fill:#2d4a1a;");
         javafx.scene.layout.HBox.setHgrow(textLbl, javafx.scene.layout.Priority.ALWAYS);
 
-         
+
         Object ts = row.get("changed_at");
         String timeStr = ts != null ? ts.toString().substring(0, 16).replace("T", " ") : "";
         Label timeLbl = new Label(timeStr);

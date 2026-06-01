@@ -17,13 +17,13 @@ public class MainController {
 
     @FXML private StackPane pageContainer;
 
-     
+
     @FXML private SidebarController  iconSidebarController;
     @FXML private TopBarController   topBarController;
 
     private final Map<String, Node> pageCache = new HashMap<>();
 
-     
+
     private static final Set<String> NO_CACHE_PAGES =
           Set.of("tours", "bookings", "dashboard", "clients", "payments");
 
@@ -32,7 +32,7 @@ public class MainController {
 
     @FXML
     public void initialize() {
-         
+
     }
 
     /** Викликається LoginController одразу після loader.load(). */
@@ -40,17 +40,17 @@ public class MainController {
         this.currentEmail = email;
         this.currentRole  = role;
 
-         
+
         if (topBarController != null) {
             topBarController.setMainController(this);
             topBarController.updateUser(formatDisplayName(email), role.name()); // role.name() = "ADMIN"/"CLIENT"
         }
 
-         
+
         ProfilePanelController.SessionState.setEmail(email != null ? email : "");
-         
+
         if (role == UserRole.ADMIN) {
-             
+
             ProfilePanelController.SessionState.setDisplayName("Адміністратор");
             ProfilePanelController.SessionState.setPhone("");
             ProfilePanelController.SessionState.setRoleName(role.getDisplayName());
@@ -60,7 +60,7 @@ public class MainController {
                       com.touroperator.config.SpringContext.getBean(
                             com.touroperator.repository.ClientRepository.class);
                 clientRepo.findByEmail(email).ifPresent(client -> {
-                     
+
                     if (client.getName() != null && !client.getName().isBlank()) {
                         ProfilePanelController.SessionState.setDisplayName(client.getName());
                         if (topBarController != null) {
@@ -74,7 +74,7 @@ public class MainController {
             } catch (Exception ignored) {}
         }
 
-         
+
         if (iconSidebarController != null) {
             iconSidebarController.applyRole(role);
         }
@@ -86,32 +86,30 @@ public class MainController {
     public void showPage(String pageName) {
         pageContainer.getChildren().clear();
         try {
-             
+
             boolean skipCache = NO_CACHE_PAGES.contains(pageName);
             if (skipCache) {
                 pageCache.remove(pageName);
             }
 
+            Node page;
             if (!pageCache.containsKey(pageName)) {
                 String path = "/ui/pages/" + capitalize(pageName) + "Page.fxml";
                 var url = getClass().getResource(path);
                 if (url == null) { showPlaceholder(pageName); return; }
 
                 FXMLLoader loader = new FXMLLoader(url);
-                Node page = loader.load();
+                page = loader.load();
 
                 Object ctrl = loader.getController();
                 if (ctrl instanceof RoleAware ra) ra.setRole(currentRole, currentEmail);
 
                 if (!skipCache) {
                     pageCache.put(pageName, page);
-                } else {
-                     
-                    pageCache.put(pageName, page);
                 }
+            } else {
+                page = pageCache.get(pageName);
             }
-
-            Node page = pageCache.get(pageName);
             page.setOpacity(0);
             pageContainer.getChildren().add(page);
 

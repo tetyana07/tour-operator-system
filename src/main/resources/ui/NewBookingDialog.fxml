@@ -195,6 +195,14 @@
               <Label fx:id="basePrice" text="0 грн"
                 style="-fx-font-size:13px; -fx-text-fill:rgba(255,255,255,0.7);"/>
             </HBox>
+            <!-- Динамічна надбавка (показується лише коли тур заповнений >50%) -->
+            <HBox fx:id="dynamicRow" alignment="CENTER_LEFT" visible="false" managed="false">
+              <Label text="🔥 Динамічна надбавка"
+                style="-fx-font-size:13px; -fx-text-fill:#ffcc80;"
+                HBox.hgrow="ALWAYS"/>
+              <Label fx:id="dynamicLabel" text="+ 0"
+                style="-fx-font-size:13px; -fx-text-fill:#ffcc80; -fx-font-weight:bold;"/>
+            </HBox>
             <HBox alignment="CENTER_LEFT">
               <Label text="Знижка"
                 style="-fx-font-size:13px; -fx-text-fill:#8fcba3;"
